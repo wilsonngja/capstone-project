@@ -66,6 +66,6 @@ struct Data_Packet {
 
 uint8_t calculateCRC8(void* hello_packet, int packet_length);
 Hello_Packet computeHelloPacketResponse();
-Data_Packet computeDataPacketResponse(int PB_State);
+Data_Packet computeDataPacketResponse();
 
 #endif

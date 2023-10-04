@@ -2,12 +2,21 @@
 from bluepy.btle import Peripheral, UUID, DefaultDelegate, BTLEDisconnectError
 
 import threading
+
+
 import sys
 import time
 from PacketStructClass import HelloPacket, AckPacket
 import CRC8Packet
 import struct
 import os
+
+import socket
+import json
+import asyncio
+from queue import Queue
+
+import random
 
 count = 0
 
@@ -120,6 +129,39 @@ success_rate = 0.0
 success_rate1 = 0.0
 success_rate2 = 0.0
 success_rate3 = 0.0
+
+relay_queue = Queue()
+
+class RelayClient:
+
+    def __init__(self, sn):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sn = int(sn)
+
+
+    async def send_message(self, msg):
+        self.sock.sendall(bytes((str(len(msg)) + '_'), encoding="utf-8"))
+        self.sock.sendall(bytes(msg, encoding="utf-8"))
+
+    
+    async def main(self):
+        self.sock.connect(('makerslab-fpga-01.d2.comp.nus.edu.sg', 10000 + self.sn)) 
+
+        print("connected")
+
+        while True:
+            if not relay_queue.empty():
+                msg = relay_queue.get()
+                await self.send_message(msg)
+                print("sent:" + msg)
+
+    def run(self):
+        try:
+            asyncio.run(self.main())
+        except KeyboardInterrupt:
+            pass
+
+
 
 # Function to connect to Bluno 1 and send data.
 def BlunoGlove():
@@ -307,7 +349,7 @@ def connectToBLEGun():
     # Establish connection to Bluno2
     try:
         # print("HELLOHELLO")
-        bluno2 = Peripheral(BLUNO_GUN_PLAYER_1_MAC_ADDRESS, "public")
+        bluno2 = Peripheral(BLUNO_GUN_PLAYER_2_MAC_ADDRESS, "public")
 
         # Establish Delegate to handle notification
         bluno2.setDelegate(SensorsDelegate2())
@@ -403,6 +445,77 @@ def connectToBLEVest():
         # print("Unable to connect to Vest")
         Ir_Sensor = YELLOW + "Unable to connect..." + END
         BlunoVest()
+
+
+def pushData():
+    global tuple_data1
+    global tuple_data2
+    global tuple_data3
+
+    global Flex_Sensor_Value 
+    global Flex_Sensor_Value2
+    global Button_Pressed 
+    global Ir_Sensor 
+    global Accelerometer_X 
+    global Accelerometer_Y 
+    global Accelerometer_Z 
+    global Gyroscope_X 
+    global Gyroscope_Y 
+    global Gyroscope_Z
+
+    global helloPacketReceived1
+    global helloPacketReceived2
+    global helloPacketReceived3
+    global connPacketReceived1
+    global connPacketReceived2
+    global connPacketReceived3
+
+    global relay_queue
+
+    while True:
+        if (connPacketReceived1) and (isinstance(tuple_data1, tuple)):
+            Gyroscope_X = tuple_data1[2]
+            Gyroscope_Y = tuple_data1[3]
+            Gyroscope_Z = tuple_data1[4]
+
+            Accelerometer_X = tuple_data1[5]
+            Accelerometer_Y = tuple_data1[6]
+            Accelerometer_Z = tuple_data1[7]
+
+            Flex_Sensor_Value = tuple_data1[8]
+            Flex_Sensor_Value2 = tuple_data1[9]
+        else:
+                Gyroscope_X = random.randint(1,1023)
+                Gyroscope_Y = random.randint(1,1023)
+                Gyroscope_Z = random.randint(1,1023)
+                Accelerometer_X = random.randint(1,1023)
+                Accelerometer_Y = random.randint(1,1023)
+                Accelerometer_Z = random.randint(1,1023)
+                Flex_Sensor_Value = random.randint(1,1023)
+                Flex_Sensor_Value2 = random.randint(1,1023)
+        
+        if (connPacketReceived2) and (isinstance(tuple_data2, tuple)):
+            Button_Pressed = tuple_data2[2]
+            sending_data = str(tuple_data2)
+            relay_queue.put("SHOTS FIRED")
+            tuple_data2 = 0
+        else:
+            Button_Pressed = 0
+        
+        if ((connPacketReceived3) and (isinstance(tuple_data3, tuple))):
+            Ir_Sensor = tuple_data3[2]
+        else:
+            Ir_Sensor = 0
+        
+        # sending_data = str(Gyroscope_X) + ", " + str(Gyroscope_Y) + ", " + str(Gyroscope_Z) + ", " + str(Accelerometer_X) + ", " + str(Accelerometer_Y) + ", " + str(Accelerometer_Z) + ", " + str(Flex_Sensor_Value) + ", " + str(Flex_Sensor_Value2) + ", " + str(Button_Pressed)
+        # relay_queue.put(sending_data)
+
+    
+
+    
+
+    
+
 
 
 
@@ -781,7 +894,7 @@ class SensorsDelegate2(DefaultDelegate):
                             elif (connPacketReceived2 == False):
                                 connPacketReceived2 = True
                         elif (tuple_data2[1] == 4):
-                            ch2.write(CRC8Packet.pack_data(HelloPacket(ACK_PACKET_ID)))
+                            # ch2.write(CRC8Packet.pack_data(HelloPacket(ACK_PACKET_ID)))
                             num_of_bytes += 1
                         
                         error_count2 = 0
@@ -878,11 +991,21 @@ class SensorsDelegate3(DefaultDelegate):
 t1 = threading.Thread(target=BlunoGlove)
 t2 = threading.Thread(target=BlunoGun)
 t3 = threading.Thread(target=BlunoVest)
-t4 = threading.Thread(target=printData)
+t4 = threading.Thread(target=pushData)
 
 # Main Function
 if __name__=='__main__':
+    sn = input("Enter player number:")
+
+    relay_client = RelayClient(sn)
+    relay = threading.Thread(target=relay_client.run)
+    
+
+    # ic.join()
+    # relay.join()
+
     t1.start()
     t2.start()    
     t3.start()
     t4.start()
+    relay.start()

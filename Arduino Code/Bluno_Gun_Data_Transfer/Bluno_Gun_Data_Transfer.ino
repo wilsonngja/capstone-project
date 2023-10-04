@@ -2,13 +2,91 @@
 #include "CRC8.h"
 #include "CRC.h"
 #include "Bluno_Variables_2.h"
-#include <Adafruit_MPU6050.h>
+
+#include <Adafruit_NeoPixel.h>
+
+int lastButtonState = HIGH;
+int currentButtonState;
+
+int shotNum = -1;
+
+#define neoPixelPin 2
+#define numPixels 6
+Adafruit_NeoPixel NeoPixel(numPixels, neoPixelPin, NEO_GRB + NEO_KHZ800);
+#define ledPin A0
+
+volatile byte pulse = 0;
+
+#define NPN_SIGNAL_PIN 3
+#define NPN_BASE_PIN 4
+#define PB_PIN 5
+
+unsigned long triggerTime = 0;
+unsigned long serialTime = 0;
+unsigned long receiveTime = 0;
+unsigned long pulseTime = 0;
+
+bool activatePulse = 0;
+bool pulseState = 0;
+//bool enableLED = 1;
+
+int i = 0;
+
+int pulseDelay = 50;
+int shootTime = 1000;
+
+bool shotFired = 0;
+int reload = 0;
+
+ISR(TIMER2_COMPB_vect) {
+  pulse++;
+  if (pulse >= 8) {
+    pulse = 0;
+    TCCR2A ^= _BV(COM2B1);
+  }
+}
+
+void setIrModOutput() {
+  pinMode(NPN_SIGNAL_PIN, OUTPUT);
+  TCCR2A = _BV(COM2B1) | _BV(WGM21) | _BV(WGM20); // Just enable output on Pin 3 
+  TCCR2B = _BV(WGM22) | _BV(CS22);
+  OCR2A = 51; // defines the frequency 51 = 38.4 KHz, 54 = 36.2 KHz, 58 = 34 KHz, 62 = 32 KHz
+  OCR2B = 26;  // deines the duty cycle - Half the OCR2A value for 50%
+  TCCR2B = TCCR2B & 0b00111000 | 0x2; // select a prescale value of 8:1 of the system clock
+}
 
 
+void LEDControl() {
+   shotNum += 1;
+   // Serial.println(shotNum);
+   // Serial.println("ENTER");
+    for(int x = 0; x <= shotNum; x++) { // neopixel
+      NeoPixel.setPixelColor(x, NeoPixel.Color(24, 0, 0));
+    }
+    NeoPixel.show(); 
+    digitalWrite(ledPin, HIGH); // led
+    delay(100);
+    digitalWrite(ledPin, LOW);
+
+    if(shotNum == 5 || reload == 1) {
+      
+      NeoPixel.clear();
+      delay(200);
+      NeoPixel.show(); 
+      shotNum = -1;
+      reload = 0;
+    }
+}
 
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(115200);
+  NeoPixel.begin();
+  pinMode(PB_PIN, INPUT_PULLUP);
+  pinMode(NPN_BASE_PIN, OUTPUT);
+  pinMode(ledPin, OUTPUT);
+
+  setIrModOutput();
+  TIMSK2 = _BV(OCIE2B);
 }
 ///
 
@@ -65,8 +143,53 @@ void loop() {
   if (isReadyToSendData) {
     struct Data_Packet data_packet;
     int PB_Value = random(0,2);
-    data_packet = computeDataPacketResponse(PB_Value);
+    // data_packet = computeDataPacketResponse();
+    // Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
+
+    if (shotNum < 0) {
+      NeoPixel.clear();
+      NeoPixel.show();
+    }
+  
+  currentButtonState = digitalRead(PB_PIN);
+
+  // Gun - Trigger is pressed
+  if(lastButtonState == LOW && currentButtonState == HIGH) { // button pressed
+    activatePulse = 1;
+    triggerTime = millis();
+    LEDControl();
+    shotFired = 1;
+    struct Data_Packet data_packet;
+
+    data_packet = computeDataPacketResponse(1);
     Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
+    delay(10);
+    
+//    delay(10);/
+  }
+  else if(lastButtonState == HIGH && currentButtonState == LOW) {
+  }
+  // save the last state
+  lastButtonState = currentButtonState;
+  
+
+    // Gun - Cease shooting after shoot time has passed
+    if (millis() >= triggerTime + shootTime) {
+      activatePulse = 0;
+    }
+
+    // Gun - Activate pulse signal with pulseTime delay
+    if (activatePulse == 1) {
+      if (millis() >= pulseTime + pulseDelay) {
+        digitalWrite(NPN_BASE_PIN, pulseState);
+        pulseState = !pulseState;
+        pulseTime = millis();
+      }
+    }
+
+    if (activatePulse == 0) {
+      digitalWrite(NPN_BASE_PIN, LOW);
+    }
 //    isReadyToSendData = false;
   }
   delay(10);

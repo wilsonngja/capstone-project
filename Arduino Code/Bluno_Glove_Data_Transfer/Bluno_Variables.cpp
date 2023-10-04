@@ -11,16 +11,6 @@ bool hasReceivedConnPacket = false;
 
 bool isReadyToSendData = true;
 
-//Adafruit_MPU6050 imu;
-
-//float VCC = 5;
-//float flexResistor = 10000; //10K Ohms
-//
-//float flexMinResistance = 40000;
-//float flexMaxResistance = 300000;
-//float baseFlexValue = 16;
-//float flexInterval = 10;
-
 uint8_t calculateCRC8(void* hello_packet, int packet_length) {
   CRC8 crc(7, 0, 0, false, false);
 
@@ -86,57 +76,3 @@ int mapGyro(float gyroValue) {
 
   return map_gyroValue; 
 }
-
-
-
-//int getFlexSensorValue(const int flexPin) {
-//  
-//  int ADCRaw = analogRead(flexPin);
-//  float ADCVoltage = (ADCRaw * VCC) / 1023;
-//
-//  float resistance = flexResistor * (VCC / ADCVoltage - 1);
-//  int flexValue  = map(resistance, flexMinResistance, flexMaxResistance, 0, 20);
-//  flexValue = constrain(flexValue, 0, 20);
-//
-//  return flexValue;
-//}
-
-//void setupImu(Adafruit_MPU6050 imu) {
-//  if (!imu.begin()) {
-//    while (1) {
-//      delay(10);
-//    }
-//  }
-//  
-//  // Set accelerometer range to +- 8G (Gravitational Strength)
-//  imu.setAccelerometerRange(MPU6050_RANGE_8_G);
-//
-//  // Set Gyro range to +- 500 deg/s
-//  imu.setGyroRange(MPU6050_RANGE_500_DEG);
-//
-//  // Set Filter bandwidth of digital lowpass filter to 21 Hz. For smoothing of signal & removal of high freq noise
-//  imu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-//
-//  delay(10);
-//}
-//
-//Glove_Data getGloveReadings(Adafruit_MPU6050 imu) {
-//  
-//  sensors_event_t a,g, temp;
-//  imu.getEvent(&a, &g, &temp);
-//
-//  Glove_Data gloveData;
-//  
-//  gloveData.GyroX = mapGyro(g.gyro.x);
-//  gloveData.GyroY = mapGyro(g.gyro.y);
-//  gloveData.GyroZ = mapGyro(g.gyro.z);
-//
-//  gloveData.AccX = mapAcc(a.acceleration.x);
-//  gloveData.AccY = mapAcc(a.acceleration.y);
-//  gloveData.AccZ = mapAcc(a.acceleration.z);
-//
-//  gloveData.Flex1 = getFlexSensorValue(FLEX_PIN1);
-//  gloveData.Flex2 = getFlexSensorValue(FLEX_PIN2);
-//
-//  return gloveData;
-//}

@@ -56,16 +56,7 @@ Glove_Data getGloveReadings() {
 
   Glove_Data gloveData;
 
-//    Serial.print("GyroX: " +  String(g.gyro.x) + " ");
-//    Serial.print("GyroY: " +  String(g.gyro.y) + " ");
-//    Serial.print("GyroZ: " +  String(g.gyro.z) + " ");
-//
-//    Serial.print("AccX: " + String(g.acceleration.x) + " ");
-//    Serial.print("AccY: " + String(g.acceleration.y) + " ");
-//    Serial.print("AccZ: " + String(g.acceleration.z) + " ");
-//
-//    Serial.print("Flex1: " + String(getFlexSensorValue(FLEX_PIN1)) + " ");
-//    Serial.println("Flex2: " + String(getFlexSensorValue(FLEX_PIN2)) + " ");
+
 
   gloveData.GyroX = mapGyro(g.gyro.x);
   gloveData.GyroY = mapGyro(g.gyro.y);
@@ -151,17 +142,6 @@ void loop() {
     struct Glove_Data glove_data;
 
     glove_data = getGloveReadings();
-
-  //    glove_data.GyroX = random(0, 1023);
-  //    glove_data.GyroY = random(0, 1023);
-  //    glove_data.GyroZ = random(0, 1023);
-  //
-  //    glove_data.AccX = random(0, 1023);
-  //    glove_data.AccY = random(0, 1023);
-  //    glove_data.AccZ = random(0, 1023);
-  //
-  //    glove_data.Flex1 = random(0, 1023);
-  //    glove_data.Flex2 = random(0, 1023);
 
     Serial.print("GyroX: " +  String(glove_data.GyroX) + " ");
     Serial.print("GyroY: " +  String(glove_data.GyroY) + " ");

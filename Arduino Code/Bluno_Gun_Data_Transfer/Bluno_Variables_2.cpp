@@ -36,12 +36,12 @@ Hello_Packet computeHelloPacketResponse() {
   return hello_packet_response;
 }
 
-Data_Packet computeDataPacketResponse(int PB_State) {
+Data_Packet computeDataPacketResponse() {
   Data_Packet data_packet;
   data_packet.Device_ID = BLUNO_2_DEVICE_ID;
   data_packet.Packet_ID = DATA_PACKET_ID;
   
-  data_packet.LEDState = PB_State;
+  data_packet.LEDState = 1;
   data_packet.Padding_1 = 0;
   data_packet.Padding_2 = 0;
 
