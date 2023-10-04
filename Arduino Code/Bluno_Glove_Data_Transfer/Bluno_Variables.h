@@ -1,12 +1,17 @@
 #ifndef BLUNO_VARIABLES_H
 #define BLUNO_VARIABLES_H
 
+//#include <Adafruit_MPU6050.h>
+
 #include <Arduino.h>
 #include "CRC8.h"
 #include "CRC.h"
 
 extern byte incomingData[20];
 extern int index;
+
+//Adafruit_MPU6050 imu;
+
 
 const int RELAY_NODE_DEVICE_ID = 0;
 const int BLUNO_1_DEVICE_ID = 1;
@@ -24,6 +29,10 @@ const int PACKET_ID_INDEX = 1;
 extern bool hasReceivedHelloPacket;
 extern bool hasReceivedConnPacket;
 extern bool isReadyToSendData;
+
+
+const int FLEX_PIN1 = A0;
+const int FLEX_PIN2 = A1;
 
 
 struct Hello_Packet {
@@ -62,8 +71,30 @@ struct Data_Packet {
   uint8_t Checksum;
 };
 
+
+struct Glove_Data {
+  uint16_t GyroX;
+  uint16_t GyroY;
+  uint16_t GyroZ;
+
+  uint16_t AccX;
+  uint16_t AccY;
+  uint16_t AccZ;
+
+  uint16_t Flex1;
+  uint16_t Flex2;
+};
+
 uint8_t calculateCRC8(void* hello_packet, int packet_length);
+
+//void setupImu(Adafruit_MPU6050 imu1);
+int getFlexSensorValue(const int flexPin);
+//Glove_Data getGloveReadings(Adafruit_MPU6050 imu1);
+
 Hello_Packet computeHelloPacketResponse();
-Data_Packet computeDataPacketResponse();
+Data_Packet computeDataPacketResponse(struct Glove_Data);
+
+int mapAcc(float accValue);
+int mapGyro(float gyroValue);
 
 #endif

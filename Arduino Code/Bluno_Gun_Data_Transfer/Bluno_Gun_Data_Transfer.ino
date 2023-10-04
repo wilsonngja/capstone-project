@@ -2,6 +2,8 @@
 #include "CRC8.h"
 #include "CRC.h"
 #include "Bluno_Variables_2.h"
+#include <Adafruit_MPU6050.h>
+
 
 
 void setup() {
@@ -62,7 +64,8 @@ void loop() {
   // The part on sending data
   if (isReadyToSendData) {
     struct Data_Packet data_packet;
-    data_packet = computeDataPacketResponse();
+    int PB_Value = random(0,2);
+    data_packet = computeDataPacketResponse(PB_Value);
     Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
 //    isReadyToSendData = false;
   }
