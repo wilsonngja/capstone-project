@@ -143,18 +143,18 @@ void loop() {
 
     glove_data = getGloveReadings();
 
-    Serial.print("GyroX: " +  String(glove_data.GyroX) + " ");
-    Serial.print("GyroY: " +  String(glove_data.GyroY) + " ");
-    Serial.print("GyroZ: " +  String(glove_data.GyroZ) + " ");
+    //Serial.print("GyroX: " +  String(glove_data.GyroX) + " ");
+    //Serial.print("GyroY: " +  String(glove_data.GyroY) + " ");
+    //Serial.print("GyroZ: " +  String(glove_data.GyroZ) + " ");
 
-    Serial.print("AccX: " + String(glove_data.AccX) + " ");
-    Serial.print("AccY: " + String(glove_data.AccY) + " ");
-    Serial.print("AccZ: " + String(glove_data.AccZ) + " ");
+    //Serial.print("AccX: " + String(glove_data.AccX) + " ");
+    //Serial.print("AccY: " + String(glove_data.AccY) + " ");
+    //Serial.print("AccZ: " + String(glove_data.AccZ) + " ");
 
-    Serial.print("Flex1: " + String(glove_data.Flex1) + " ");
-    Serial.println("Flex2: " + String(glove_data.Flex2) + " ");
+    //Serial.print("Flex1: " + String(glove_data.Flex1) + " ");
+    //Serial.println("Flex2: " + String(glove_data.Flex2) + " ");
     data_packet = computeDataPacketResponse(glove_data);
-//    Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
+    Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
   }
   delay(10);
   

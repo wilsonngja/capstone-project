@@ -9,7 +9,7 @@ int index = 0;
 bool hasReceivedHelloPacket = false;
 bool hasReceivedConnPacket = false;
 
-bool isReadyToSendData = true;
+bool isReadyToSendData = false;
 
 uint8_t calculateCRC8(void* hello_packet, int packet_length) {
   CRC8 crc(7, 0, 0, false, false);

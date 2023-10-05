@@ -10,6 +10,7 @@ from PacketStructClass import HelloPacket, AckPacket
 import CRC8Packet
 import struct
 import os
+from paho.mqtt import client as mqttclient
 
 import socket
 import json
@@ -19,6 +20,11 @@ from queue import Queue
 import random
 
 count = 0
+
+
+BROKER = 'broker.emqx.io'
+relay_queue = Queue()
+mqtt_queue = Queue()
 
 NODE_DEVICE_ID = 0
 BLUNO_1_DEVICE_ID = 1
@@ -137,6 +143,7 @@ class RelayClient:
     def __init__(self, sn):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sn = int(sn)
+        
 
 
     async def send_message(self, msg):
@@ -162,6 +169,50 @@ class RelayClient:
             pass
 
 
+class MQTTClient:
+
+    def __init__(self, sn):
+        self.sn = int(sn)
+
+    def connect_mqtt(self):
+        # Set Connecting Client ID
+        client = mqttclient.Client(f'lasertagb01-vizrelay{self.sn}')
+        client.on_connect = self.on_connect
+        # client.username_pw_set(username, password)
+        client.connect(BROKER, 1883)
+        return client
+    
+
+    def on_connect(self,client, userdata, flags, rc):
+        if rc == 0:
+            print("Connected to MQTT Broker!")
+        else:
+            print("Failed to connect, return code %d\n", rc)
+
+
+    def on_message(self, client, userdata, message):
+        mqtt_queue.put(json.loads(message.payload.decode("utf-8")))
+
+            
+    def run(self):
+        mqttclient = self.connect_mqtt()
+        mqttclient.loop_start()
+
+        mqttclient.subscribe("lasertag/vizgamestate")
+        mqttclient.on_message = self.on_message
+
+        while True:
+            if not mqtt_queue.empty():
+                msg = mqtt_queue.get()
+                if msg['type'] == "UPDATE":
+                    if self.sn == 1:
+                        hp = msg['game_state']['p1']['hp']
+                        bullets = msg['game_state']['p1']['bullets']
+                    else:
+                        hp = msg['game_state']['p2']['hp']
+                        bullets = msg['game_state']['p2']['bullets']
+                
+                    print("hp: " + str(hp) + "bullets: " + str(bullets))
 
 # Function to connect to Bluno 1 and send data.
 def BlunoGlove():
@@ -255,9 +306,10 @@ def connectToBLEGlove():
     global bluno1
 
     try:
-        bluno1 = Peripheral(BLUNO_GLOVE_PLAYER_1_MAC_ADDRESS, "public")
+        bluno1 = Peripheral(BLUNO_GLOVE_PLAYER_2_MAC_ADDRESS, "public")
         bluno1.setDelegate(SensorsDelegate1())
-    
+
+        print("GLOVE CONNECTED")
         # Retrieve Service and Characteristics
         svc = bluno1.getServiceByUUID("dfb0")
         ch = svc.getCharacteristics("dfb1")[0]
@@ -354,7 +406,7 @@ def connectToBLEGun():
         # Establish Delegate to handle notification
         bluno2.setDelegate(SensorsDelegate2())
 
-        # print("CONNECTED")
+        print("GUN CONNECTED")
         # Retrieve Service and Characteristics
         svc = bluno2.getServiceByUUID("dfb0")
         ch = svc.getCharacteristics("dfb1")[0]
@@ -433,6 +485,7 @@ def connectToBLEVest():
         # Establish Delegate to handle notification
         bluno3.setDelegate(SensorsDelegate3())
     
+        print("VEST CONNECTED")
         # Retrieve Service and Characteristics
         svc = bluno3.getServiceByUUID("dfb0")
         ch = svc.getCharacteristics("dfb1")[0]
@@ -509,14 +562,6 @@ def pushData():
         
         # sending_data = str(Gyroscope_X) + ", " + str(Gyroscope_Y) + ", " + str(Gyroscope_Z) + ", " + str(Accelerometer_X) + ", " + str(Accelerometer_Y) + ", " + str(Accelerometer_Z) + ", " + str(Flex_Sensor_Value) + ", " + str(Flex_Sensor_Value2) + ", " + str(Button_Pressed)
         # relay_queue.put(sending_data)
-
-    
-
-    
-
-    
-
-
 
 
 def printData():
@@ -727,9 +772,98 @@ def printData():
         time.sleep(0.2)
 
 
-        
-        
 
+def writeData():
+    global tuple_data1
+    global tuple_data2
+    global tuple_data3
+
+    global Flex_Sensor_Value 
+    global Flex_Sensor_Value2
+    global Button_Pressed 
+    global Ir_Sensor 
+    global Accelerometer_X 
+    global Accelerometer_Y 
+    global Accelerometer_Z 
+    global Gyroscope_X 
+    global Gyroscope_Y 
+    global Gyroscope_Z 
+
+    global helloPacketReceived1
+    global helloPacketReceived2
+    global helloPacketReceived3
+    global connPacketReceived1
+    global connPacketReceived2
+    global connPacketReceived3
+
+    global start_time
+
+    sequence = ['End']
+    next_line = "\n"
+
+    f = open("test_file.txt", "a")
+    try:
+        
+        while True:
+            if (connPacketReceived1) and (isinstance(tuple_data1, tuple)):
+
+                with open('3-R-2.txt', 'a') as file:
+                    
+                    for action in sequence:
+                        print("Action: ", action)
+                        file.write(action + '\n')
+                        for i in range(1,4):
+                            print(i)
+                            time.sleep(1)
+                        
+
+                        for i in range(1, 51):
+                            Gyroscope_X = str(tuple_data1[2]) + ", "
+                            Gyroscope_Y = str(tuple_data1[3]) + ", "
+                            Gyroscope_Z = str(tuple_data1[4]) + ", "
+
+                            Accelerometer_X = str(tuple_data1[5]) + ", "
+                            Accelerometer_Y = str(tuple_data1[6]) + ", "
+                            Accelerometer_Z = str(tuple_data1[7]) + ", "
+
+                            Flex_Sensor_Value = str(tuple_data1[8]) + ", "
+                            Flex_Sensor_Value2 = str(tuple_data1[9]) + ", "
+
+
+                            final_data = str(i) + ", " +  Gyroscope_X + Gyroscope_Y + Gyroscope_Z + Accelerometer_X + Accelerometer_Y + Accelerometer_Z + Flex_Sensor_Value + Flex_Sensor_Value2 + next_line
+                            print("Writing: ", final_data)
+                            file.write(final_data)
+                            file.flush()
+                            time.sleep(0.05)
+
+                        time.sleep(1)
+                    # time.sleep(0.1)
+
+            # else:
+            #     Gyroscope_X = "0, "
+            #     Gyroscope_Y = "0, "
+            #     Gyroscope_Z = "0, "
+            #     Accelerometer_X = "0, "
+            #     Accelerometer_Y = "0, "
+            #     Accelerometer_Z = "0, "
+            #     Flex_Sensor_Value = "0, "
+            #     Flex_Sensor_Value2 = "0, "
+
+            # if (connPacketReceived2) and (isinstance(tuple_data2, tuple)):
+            #     Button_Pressed = str(tuple_data2[2]) + ", "
+            # else:
+            #     Button_Pressed = "0, "
+            
+
+            # if ((connPacketReceived3) and (isinstance(tuple_data3, tuple))):
+            #     Ir_Sensor = str(tuple_data3[2])
+            # else:
+            #     Ir_Sensor = "0, "
+            
+            
+    except KeyboardInterrupt:
+        print("CTRL + C PRESSED. Exiting...")
+        f.close()
 
 
 # Sensor Delegate for Bluno 1
@@ -987,11 +1121,12 @@ class SensorsDelegate3(DefaultDelegate):
                 connPacketReceived3 = False
 
 
+
 # Declare Thread
 t1 = threading.Thread(target=BlunoGlove)
 t2 = threading.Thread(target=BlunoGun)
 t3 = threading.Thread(target=BlunoVest)
-t4 = threading.Thread(target=pushData)
+t4 = threading.Thread(target=writeData)
 
 # Main Function
 if __name__=='__main__':
@@ -999,6 +1134,9 @@ if __name__=='__main__':
 
     relay_client = RelayClient(sn)
     relay = threading.Thread(target=relay_client.run)
+    
+    mqtt_client = MQTTClient(sn)
+    mqtt_thread = threading.Thread(target=mqtt_client.run)
     
 
     # ic.join()
@@ -1008,4 +1146,5 @@ if __name__=='__main__':
     t2.start()    
     t3.start()
     t4.start()
-    relay.start()
+    # relay.start()
+    # mqtt_thread.start()
