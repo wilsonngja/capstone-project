@@ -35,7 +35,6 @@ void health() {
 }
 
 void playerShot() {
-  
   livesNum--;
   NeoPixel.clear();
   for(int x = 0; x < livesNum; x++) { // neopixel

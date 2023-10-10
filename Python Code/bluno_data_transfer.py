@@ -22,6 +22,8 @@ import random
 count = 0
 
 
+index = 1
+
 BROKER = 'broker.emqx.io'
 relay_queue = Queue()
 mqtt_queue = Queue()
@@ -802,7 +804,7 @@ def writeData():
         while True:
             if (connPacketReceived1) and (isinstance(tuple_data1, tuple)):
 
-                with open('3-R-2.txt', 'a') as file:
+                with open('3-NN-2.txt', 'a') as file:
                     
                     for action in sequence:
                         print("Action: ", action)
@@ -812,7 +814,7 @@ def writeData():
                             time.sleep(1)
                         
 
-                        for i in range(1, 51):
+                        for i in range(1, 41):
                             Gyroscope_X = str(tuple_data1[2]) + ", "
                             Gyroscope_Y = str(tuple_data1[3]) + ", "
                             Gyroscope_Z = str(tuple_data1[4]) + ", "
@@ -860,6 +862,66 @@ def writeData():
         print("CTRL + C PRESSED. Exiting...")
         f.close()
 
+def writeIndividualActionData():
+    global tuple_data1
+    global tuple_data2
+    global tuple_data3
+
+    global Flex_Sensor_Value 
+    global Flex_Sensor_Value2
+    global Button_Pressed 
+    global Ir_Sensor 
+    global Accelerometer_X 
+    global Accelerometer_Y 
+    global Accelerometer_Z 
+    global Gyroscope_X 
+    global Gyroscope_Y 
+    global Gyroscope_Z 
+
+    global helloPacketReceived1
+    global helloPacketReceived2
+    global helloPacketReceived3
+    global connPacketReceived1
+    global connPacketReceived2
+    global connPacketReceived3
+
+    global start_time
+
+    sequence = ['End']
+    next_line = "\n"
+
+    f = open("test_file.txt", "a")
+    try:
+        
+        while True:
+            if (connPacketReceived1) and (isinstance(tuple_data1, tuple)):
+
+                with open('sample_output.txt', 'a') as file:
+                    for i in range(1, 33):
+                        Gyroscope_X = str(tuple_data1[2]) + ", "
+                        Gyroscope_Y = str(tuple_data1[3]) + ", "
+                        Gyroscope_Z = str(tuple_data1[4]) + ", "
+
+                        Accelerometer_X = str(tuple_data1[5]) + ", "
+                        Accelerometer_Y = str(tuple_data1[6]) + ", "
+                        Accelerometer_Z = str(tuple_data1[7]) + ", "
+
+                        Flex_Sensor_Value = str(tuple_data1[8]) + ", "
+                        Flex_Sensor_Value2 = str(tuple_data1[9]) + ", "
+
+
+                        final_data = Gyroscope_X + Gyroscope_Y + Gyroscope_Z + Accelerometer_X + Accelerometer_Y + Accelerometer_Z + Flex_Sensor_Value + Flex_Sensor_Value2 + next_line
+                        print("Writing: ", final_data)
+                        file.write(final_data)
+                        file.flush()
+                    # tuple_data1 = None
+                    
+            
+            
+    except KeyboardInterrupt:
+        print("CTRL + C PRESSED. Exiting...")
+        f.close()
+
 
 # Sensor Delegate for Bluno 1
 class SensorsDelegate1(DefaultDelegate):
@@ -893,6 +955,7 @@ class SensorsDelegate1(DefaultDelegate):
             global byte_array_1
             global error_count1
             global fragment_packet_count1
+            global index
 
             try:
                 byte_array_1.extend(data)
@@ -934,7 +997,11 @@ class SensorsDelegate1(DefaultDelegate):
 
                     else:
                         tuple_data1 = tuple(tuple_data)
-                        print(tuple_data1)
+                        # print(index)
+                        print(str(index), str(tuple_data1))
+                        index += 1
+                        if (index == 33):
+                            index = 1
                         
                         if (tuple_data1[1] == 0):
                             if (helloPacketReceived1 == False):
@@ -1122,7 +1189,7 @@ class SensorsDelegate3(DefaultDelegate):
 t1 = threading.Thread(target=BlunoGlove)
 t2 = threading.Thread(target=BlunoGun)
 t3 = threading.Thread(target=BlunoVest)
-t4 = threading.Thread(target=pushData)
+t4 = threading.Thread(target=writeIndividualActionData)
 
 # Main Function
 if __name__=='__main__':
@@ -1142,5 +1209,5 @@ if __name__=='__main__':
     t2.start()    
     t3.start()
     t4.start()
-    relay.start()
+    # relay.start()
     # mqtt_thread.start()
