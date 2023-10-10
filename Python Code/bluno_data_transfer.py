@@ -526,6 +526,7 @@ def pushData():
     global relay_queue
 
     while True:
+        
         if (connPacketReceived1) and (isinstance(tuple_data1, tuple)):
             Gyroscope_X = tuple_data1[2]
             Gyroscope_Y = tuple_data1[3]
@@ -537,15 +538,9 @@ def pushData():
 
             Flex_Sensor_Value = tuple_data1[8]
             Flex_Sensor_Value2 = tuple_data1[9]
-        else:
-                Gyroscope_X = random.randint(1,1023)
-                Gyroscope_Y = random.randint(1,1023)
-                Gyroscope_Z = random.randint(1,1023)
-                Accelerometer_X = random.randint(1,1023)
-                Accelerometer_Y = random.randint(1,1023)
-                Accelerometer_Z = random.randint(1,1023)
-                Flex_Sensor_Value = random.randint(1,1023)
-                Flex_Sensor_Value2 = random.randint(1,1023)
+            sending_data = str(Gyroscope_X) + ", " + str(Gyroscope_Y) + ", " + str(Gyroscope_Z) + ", " + str(Accelerometer_X) + ", " + str(Accelerometer_Y) + ", " + str(Accelerometer_Z) + ", " + str(Flex_Sensor_Value) + ", " + str(Flex_Sensor_Value2) + ", " + str(Button_Pressed)
+            relay_queue.put(sending_data)
+        
         
         if (connPacketReceived2) and (isinstance(tuple_data2, tuple)):
             Button_Pressed = tuple_data2[2]
@@ -757,17 +752,17 @@ def printData():
         print(f"{BOLD}{CYAN}GyroX:{END} {Gyroscope_X} \n{BOLD}{CYAN}GyroY:{END} {Gyroscope_Y} \n{BOLD}{CYAN}GyroZ:{END} {Gyroscope_Z}")
         print(f"{BOLD}{CYAN}AccX:{END} {Accelerometer_X} \n{BOLD}{CYAN}AccY:{END} {Accelerometer_Y} \n{BOLD}{CYAN}AccZ:{END} {Accelerometer_Z}")
         print(f"{BOLD}{CYAN}Flex Sensor 1:{END} {Flex_Sensor_Value}\n{BOLD}{CYAN}Flex Sensor 2:{END} {Flex_Sensor_Value2}")
-        print(f"{BOLD}{CYAN}Button Pressed:{END} {Button_Pressed}")
-        print(f"{BOLD}{CYAN}IR Sensor{END} {Ir_Sensor}\n")
+        # print(f"{BOLD}{CYAN}Button Pressed:{END} {Button_Pressed}")
+        # print(f"{BOLD}{CYAN}IR Sensor{END} {Ir_Sensor}\n")
         
-        print(f"{BOLD}{MAGENTA}Total Packet 1 Sent:{END} {total_packet1_sent}\n{BOLD}{MAGENTA}Packets Sent Successfully:{END} {success_packet1_sent}\n{BOLD}{MAGENTA}Success Rate Bluno 1:{END} {success_rate_packet_1}\033[0m\n{BOLD}{MAGENTA}Fragmented Packets:{END}{fragment_packet_count1}\n")
-        print(f"{BOLD}{MAGENTA}Total Packet 2 Sent:{END} {total_packet2_sent}\n{BOLD}{MAGENTA}Packets Sent Successfully:{END} {success_packet2_sent}\n{BOLD}{MAGENTA}Success Rate Bluno 2:{END} {success_rate_packet_2}%\033[0m\n{BOLD}{MAGENTA}Fragmented Packets:{END}{fragment_packet_count2}\n")
-        print(f"{BOLD}{MAGENTA}Total Packet 3 Sent:{END} {total_packet3_sent}\n{BOLD}{MAGENTA}Packets Sent Successfully:{END} {success_packet3_sent}\n{BOLD}{MAGENTA}Success Rate Bluno 3:{END} {success_rate_packet_3}%\033[0m\n{BOLD}{MAGENTA}Fragmented Packets:{END}{fragment_packet_count3}\n")
+        # print(f"{BOLD}{MAGENTA}Total Packet 1 Sent:{END} {total_packet1_sent}\n{BOLD}{MAGENTA}Packets Sent Successfully:{END} {success_packet1_sent}\n{BOLD}{MAGENTA}Success Rate Bluno 1:{END} {success_rate_packet_1}\033[0m\n{BOLD}{MAGENTA}Fragmented Packets:{END}{fragment_packet_count1}\n")
+        # print(f"{BOLD}{MAGENTA}Total Packet 2 Sent:{END} {total_packet2_sent}\n{BOLD}{MAGENTA}Packets Sent Successfully:{END} {success_packet2_sent}\n{BOLD}{MAGENTA}Success Rate Bluno 2:{END} {success_rate_packet_2}%\033[0m\n{BOLD}{MAGENTA}Fragmented Packets:{END}{fragment_packet_count2}\n")
+        # print(f"{BOLD}{MAGENTA}Total Packet 3 Sent:{END} {total_packet3_sent}\n{BOLD}{MAGENTA}Packets Sent Successfully:{END} {success_packet3_sent}\n{BOLD}{MAGENTA}Success Rate Bluno 3:{END} {success_rate_packet_3}%\033[0m\n{BOLD}{MAGENTA}Fragmented Packets:{END}{fragment_packet_count3}\n")
         
         
-        print(f"{BOLD}{MAGENTA}Total Packets Sent:{END} {total_packets_sent}\n{BOLD}{MAGENTA}Total Packets Sent Successfully:{END} {success_packet_sent}")
-        print(f"{BOLD}{MAGENTA}Success Rate:{END} {success_rate_sent}%\033[0m\n")
-        print(f"{BOLD}{BLUE}Throughput:{END} {throughput_rate}")
+        # print(f"{BOLD}{MAGENTA}Total Packets Sent:{END} {total_packets_sent}\n{BOLD}{MAGENTA}Total Packets Sent Successfully:{END} {success_packet_sent}")
+        # print(f"{BOLD}{MAGENTA}Success Rate:{END} {success_rate_sent}%\033[0m\n")
+        # print(f"{BOLD}{BLUE}Throughput:{END} {throughput_rate}")
         
         time.sleep(0.2)
 
@@ -939,7 +934,8 @@ class SensorsDelegate1(DefaultDelegate):
 
                     else:
                         tuple_data1 = tuple(tuple_data)
-                        # print(tuple_data1)
+                        print(tuple_data1)
+                        
                         if (tuple_data1[1] == 0):
                             if (helloPacketReceived1 == False):
                                 helloPacketReceived1 = True
@@ -1028,7 +1024,7 @@ class SensorsDelegate2(DefaultDelegate):
                             elif (connPacketReceived2 == False):
                                 connPacketReceived2 = True
                         elif (tuple_data2[1] == 4):
-                            # ch2.write(CRC8Packet.pack_data(HelloPacket(ACK_PACKET_ID)))
+                            ch2.write(CRC8Packet.pack_data(HelloPacket(ACK_PACKET_ID)))
                             num_of_bytes += 1
                         
                         error_count2 = 0
@@ -1126,7 +1122,7 @@ class SensorsDelegate3(DefaultDelegate):
 t1 = threading.Thread(target=BlunoGlove)
 t2 = threading.Thread(target=BlunoGun)
 t3 = threading.Thread(target=BlunoVest)
-t4 = threading.Thread(target=writeData)
+t4 = threading.Thread(target=pushData)
 
 # Main Function
 if __name__=='__main__':
@@ -1146,5 +1142,5 @@ if __name__=='__main__':
     t2.start()    
     t3.start()
     t4.start()
-    # relay.start()
+    relay.start()
     # mqtt_thread.start()

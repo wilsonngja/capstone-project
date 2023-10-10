@@ -3,15 +3,91 @@
 #include "CRC.h"
 #include "Bluno_Variables_3.h"
 
+// VEST
+#define player 1 // Orange (50)
+//#define player 2 // BLUE (20)
+
+#include <Adafruit_NeoPixel.h>
+#define neoPixelPin A2
+#define numPixels 10
+Adafruit_NeoPixel NeoPixel(numPixels, neoPixelPin, NEO_GRB + NEO_KHZ800);
+
+int livesNum = 10; // number of HP (1 live, 10 HP)
+int HP = 100;
+
+#define RECV_PIN A3 // not pin 2
+unsigned long triggertime = 0;
+unsigned long serialtime = 0;
+unsigned long receivetime = 0;
+unsigned long pulsebuffer = 0;
+
+int numOfChecks;
+
+int lightuptime = 800;
+int hitbywhichplayer = 0; // to send to internal comms
+bool receiverstate = 0;
+int pulsecheck = 0;
+
+int pulsedelay;
+
+void health() {
+  HP -= 10;
+}
+
+void playerShot() {
+  
+  livesNum--;
+  NeoPixel.clear();
+  for(int x = 0; x < livesNum; x++) { // neopixel
+      if (player ==  1) {
+        NeoPixel.setPixelColor(x, NeoPixel.Color(242, 133, 0)); // orange
+      } else if (player == 2) {
+        NeoPixel.setPixelColor(x, NeoPixel.Color(0, 0, 255)); // blue
+      }
+    }
+    NeoPixel.show(); 
+    delay(1100);
+
+  if(livesNum <= 0) {
+    NeoPixel.clear();
+    NeoPixel.show(); 
+    delay(500);
+    livesNum = 10;
+  }
+}
+
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
+  NeoPixel.begin(); 
+  NeoPixel.setBrightness(50);
+
+   if (player == 1) {
+      pulsedelay = 50; // align with player 2 gun
+      numOfChecks = 4;
+  } else if (player == 2) {
+      pulsedelay = 20;   // align with player 1 gun
+      numOfChecks = 5;
+  }
+  
 }
 ///
 
 void loop() {
   struct Hello_Packet hello_packet_response;
+
+  NeoPixel.clear();
+  if(livesNum == numPixels) {
+     for(int x = 0; x < livesNum; x++) { // neopixel
+        if (player ==  1) {
+        NeoPixel.setPixelColor(x, NeoPixel.Color(242, 133, 0)); // orange
+      } else if (player == 2) {
+        NeoPixel.setPixelColor(x, NeoPixel.Color(0, 0, 255)); // blue
+      }
+    }
+    NeoPixel.show(); 
+  }
   
   // Check for data available
   while (Serial.available()) {
@@ -61,11 +137,53 @@ void loop() {
 
   // The part on sending data
   if (isReadyToSendData) {
-    struct Data_Packet data_packet;
-    int IR_Value = random(0,2);
-    data_packet = computeDataPacketResponse(IR_Value);
-    Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
-    isReadyToSendData = false;
+    
+    if(millis()>=pulsebuffer+pulsedelay)
+    {
+      pulsebuffer = millis();
+      //Serial.println(pulsebuffer);
+      if(receiverstate!=digitalRead(RECV_PIN))
+      {
+        
+        // Serial.println(" DataFlipped");
+        pulsecheck++;
+        if(pulsecheck== numOfChecks)
+        {
+          struct Data_Packet data_packet;
+          data_packet = computeDataPacketResponse(1);
+          Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
+          isReadyToSendData = false;
+          
+          hitbywhichplayer = 1; // internal comms
+          playerShot();
+          health();
+          receivetime=millis();
+          //Serial.println("PulseConfirmed");
+        }
+      }
+      else
+      {
+        pulsecheck = 0;
+      }
+      receiverstate = digitalRead(RECV_PIN);    
+  
+      if(hitbywhichplayer==1)
+      {
+        if(millis()<receivetime+lightuptime)
+        {
+          //Serial.println("HitReceived");
+        }
+        else
+        {
+          hitbywhichplayer=0;
+        }
+      }
+    }
+  
+    // int IR_Value = random(0,2);
+    //data_packet = computeDataPacketResponse(IR_Value);
+    //Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
+    //isReadyToSendData = false;
   }
   delay(7);
   

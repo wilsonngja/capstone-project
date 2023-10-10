@@ -33,7 +33,7 @@ bool pulseState = 0;
 int i = 0;
 
 int pulseDelay = 50;
-int shootTime = 1000;
+int shootTime = 800;
 
 bool shotFired = 0;
 int reload = 0;
@@ -133,6 +133,9 @@ void loop() {
           hasReceivedConnPacket = true;
           isReadyToSendData = true; 
         }
+      } 
+      else if (incomingData[PACKET_ID_INDEX] == ACK_PACKET_ID) {
+        isReadyToSendData = true;
       }
 
        
@@ -161,8 +164,9 @@ void loop() {
     shotFired = 1;
     struct Data_Packet data_packet;
 
-    data_packet = computeDataPacketResponse(1);
+    data_packet = computeDataPacketResponse();
     Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
+    isReadyToSendData = false;
     delay(10);
     
 //    delay(10);/
@@ -190,7 +194,7 @@ void loop() {
     if (activatePulse == 0) {
       digitalWrite(NPN_BASE_PIN, LOW);
     }
-//    isReadyToSendData = false;
+    
   }
   delay(10);
   
