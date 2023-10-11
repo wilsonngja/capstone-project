@@ -131,6 +131,11 @@ void loop() {
       } else if (incomingData[PACKET_ID_INDEX] == ACK_PACKET_ID) {
         isReadyToSendData = true;
       }
+
+      // Added in on October 11
+      if (incomingData[PACKET_ID_INDEX] == DATA_PACKET_ID) {
+        int hp_left = incomingData[2] ;
+      }
     }
   }
 

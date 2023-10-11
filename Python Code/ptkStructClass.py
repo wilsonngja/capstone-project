@@ -38,6 +38,36 @@ class HelloPkt:
                            self.padding7, 
                            self.padding8, 
                            self.crcChecksum)
+
+class DataPkt:
+    def __init__(self, deviceID, value):
+        self.deviceID = deviceID
+        self.packetID = 0xE1
+        self.message = value
+        self.padding1 = 0
+        self.padding2 = 0
+        self.padding3 = 0
+        self.padding4 = 0
+        self.padding5 = 0
+        self.padding6 = 0
+        self.padding7 = 0
+        self.padding8 = 0
+        self.crcChecksum = 0
+    
+    def pack(self):
+        return struct.pack(pkt_format, 
+                           self.deviceID,
+                           self.packetID, 
+                           self.message, 
+                           self.padding1, 
+                           self.padding2, 
+                           self.padding3, 
+                           self.padding4, 
+                           self.padding5, 
+                           self.padding6, 
+                           self.padding7, 
+                           self.padding8, 
+                           self.crcChecksum)
     
     def packForCRC8(self):
         return struct.pack(cal_CRC8_pkt_format, 
@@ -77,9 +107,3 @@ def prepHelloPkt(HelloPkt, deviceID, calculateCRC8):
     ptk = helloPkt.pack()
     return ptk
 
-# if __name__=='__main__':
-#     # Hello Packet in byte form to be sent
-#     ptk = prepHelloPkt(HelloPkt, P1_VEST_DEVICE_ID, calculateCRC8)
-#     # Tuple of hello packet
-#     hPkt = HelloPkt.unpack(ptk)
-#     print(hPkt)

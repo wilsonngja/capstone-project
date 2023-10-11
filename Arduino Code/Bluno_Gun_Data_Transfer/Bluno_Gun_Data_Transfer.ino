@@ -65,7 +65,7 @@ void LEDControl() {
     }
     NeoPixel.show(); 
     digitalWrite(ledPin, HIGH); // led
-    delay(100);
+    delay(10);
     digitalWrite(ledPin, LOW);
 
     if(shotNum == 5 || reload == 1) {
@@ -136,6 +136,11 @@ void loop() {
       } 
       else if (incomingData[PACKET_ID_INDEX] == ACK_PACKET_ID) {
         isReadyToSendData = true;
+      }
+
+      // Added in on October 11
+      if (incomingData[PACKET_ID_INDEX] == DATA_PACKET_ID) {
+        int bullets_left = incomingData[2] ;
       }
 
        

@@ -28,6 +28,8 @@ BROKER = 'broker.emqx.io'
 relay_queue = Queue()
 mqtt_queue = Queue()
 
+# Yellow/White 1 
+# Blue 2 
 NODE_DEVICE_ID = 0
 BLUNO_1_DEVICE_ID = 1
 BLUNO_2_DEVICE_ID = 2
@@ -62,8 +64,6 @@ BLUNO_GLOVE_PLAYER_1_MAC_ADDRESS = "D0:39:72:E4:93:9D"
 BLUNO_GLOVE_PLAYER_2_MAC_ADDRESS = "D0:39:72:E4:93:BC"
 BLUNO_GUN_PLAYER_1_MAC_ADDRESS = "D0:39:72:E4:80:A8"
 BLUNO_GUN_PLAYER_2_MAC_ADDRESS = "D0:39:72:E4:8C:05"
-
-
 
 
 
@@ -154,7 +154,7 @@ class RelayClient:
 
     
     async def main(self):
-        self.sock.connect(('makerslab-fpga-01.d2.comp.nus.edu.sg', 10000 + self.sn)) 
+        self.sock.connect(('172.26.190.81', 10000 + self.sn)) 
 
         print("connected")
 
@@ -203,6 +203,9 @@ class MQTTClient:
         mqttclient.subscribe("lasertag/vizgamestate")
         mqttclient.on_message = self.on_message
 
+        global ch2
+        global ch3
+
         while True:
             if not mqtt_queue.empty():
                 msg = mqtt_queue.get()
@@ -210,9 +213,14 @@ class MQTTClient:
                     if self.sn == 1:
                         hp = msg['game_state']['p1']['hp']
                         bullets = msg['game_state']['p1']['bullets']
+                        # ch2.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, bullets)))
+                        # ch3.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, hp)))
                     else:
                         hp = msg['game_state']['p2']['hp']
                         bullets = msg['game_state']['p2']['bullets']
+                        # ch2.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, bullets)))
+                        # ch3.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, hp)))
+                        
                 
                     print("hp: " + str(hp) + "bullets: " + str(bullets))
 
@@ -379,6 +387,7 @@ def BlunoGun():
                     elif (time.time() - hello_packet_start_time > 3) and (helloPacketReceived2 == True) and (connPacketReceived2 == False):
                         ch2.write(CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID)))
                         hello_packet_start_time = time.time()
+
                     
             except Exception as e:
                 bluno.disconnect()
@@ -403,7 +412,7 @@ def connectToBLEGun():
     # Establish connection to Bluno2
     try:
         # print("HELLOHELLO")
-        bluno2 = Peripheral(BLUNO_GUN_PLAYER_2_MAC_ADDRESS, "public")
+        bluno2 = Peripheral(BLUNO_GUN_PLAYER_1_MAC_ADDRESS, "public")
 
         # Establish Delegate to handle notification
         bluno2.setDelegate(SensorsDelegate2())
@@ -503,33 +512,40 @@ def connectToBLEVest():
 
 
 def pushData():
-    global tuple_data1
-    global tuple_data2
-    global tuple_data3
-
-    global Flex_Sensor_Value 
-    global Flex_Sensor_Value2
-    global Button_Pressed 
-    global Ir_Sensor 
-    global Accelerometer_X 
-    global Accelerometer_Y 
-    global Accelerometer_Z 
-    global Gyroscope_X 
-    global Gyroscope_Y 
-    global Gyroscope_Z
-
-    global helloPacketReceived1
-    global helloPacketReceived2
-    global helloPacketReceived3
-    global connPacketReceived1
-    global connPacketReceived2
-    global connPacketReceived3
-
-    global relay_queue
+    
 
     while True:
         
+        global helloPacketReceived1
+        global helloPacketReceived2
+        global helloPacketReceived3
+        global connPacketReceived1
+        global connPacketReceived2
+        global connPacketReceived3
+
+        global tuple_data1
+        global tuple_data2
+        global tuple_data3
+
+        global Ir_Sensor
+
+        global Flex_Sensor_Value 
+        global Flex_Sensor_Value2
+        global Button_Pressed 
+            
+        global Accelerometer_X 
+        global Accelerometer_Y 
+        global Accelerometer_Z 
+        global Gyroscope_X 
+        global Gyroscope_Y 
+        global Gyroscope_Z
+        
+        global relay_queue
+
+        
+        # print(tuple_data1)
         if (connPacketReceived1) and (isinstance(tuple_data1, tuple)):
+            print("Enter inner loop")
             Gyroscope_X = tuple_data1[2]
             Gyroscope_Y = tuple_data1[3]
             Gyroscope_Z = tuple_data1[4]
@@ -541,7 +557,10 @@ def pushData():
             Flex_Sensor_Value = tuple_data1[8]
             Flex_Sensor_Value2 = tuple_data1[9]
             sending_data = str(Gyroscope_X) + ", " + str(Gyroscope_Y) + ", " + str(Gyroscope_Z) + ", " + str(Accelerometer_X) + ", " + str(Accelerometer_Y) + ", " + str(Accelerometer_Z) + ", " + str(Flex_Sensor_Value) + ", " + str(Flex_Sensor_Value2) + ", " + str(Button_Pressed)
-            relay_queue.put(sending_data)
+            # relay_queue.put(sending_data)
+            # sleep(0.01)
+        # else:
+            # relay_queue.put(str(type(tuple_data1)))
         
         
         if (connPacketReceived2) and (isinstance(tuple_data2, tuple)):
@@ -996,12 +1015,26 @@ class SensorsDelegate1(DefaultDelegate):
                             error_count1 = 0
 
                     else:
+                        global relay_queue
                         tuple_data1 = tuple(tuple_data)
+                        Gyroscope_X = tuple_data1[2]
+                        Gyroscope_Y = tuple_data1[3]
+                        Gyroscope_Z = tuple_data1[4]
+
+                        Accelerometer_X = tuple_data1[5]
+                        Accelerometer_Y = tuple_data1[6]
+                        Accelerometer_Z = tuple_data1[7]
+
+                        Flex_Sensor_Value = tuple_data1[8]
+                        Flex_Sensor_Value2 = tuple_data1[9]
+                        sending_data = str(Gyroscope_X) + ", " + str(Gyroscope_Y) + ", " + str(Gyroscope_Z) + ", " + str(Accelerometer_X) + ", " + str(Accelerometer_Y) + ", " + str(Accelerometer_Z) + ", " + str(Flex_Sensor_Value) + ", " + str(Flex_Sensor_Value2) + ", " + str(Button_Pressed)
+                        relay_queue.put(sending_data)
+                        # print(tuple_data1)
                         # print(index)
-                        print(str(index), str(tuple_data1))
-                        index += 1
-                        if (index == 33):
-                            index = 1
+                        # print(str(index), str(tuple_data1))
+                        # index += 1
+                        # if (index == 33):
+                        #     index = 1
                         
                         if (tuple_data1[1] == 0):
                             if (helloPacketReceived1 == False):
@@ -1049,7 +1082,7 @@ class SensorsDelegate2(DefaultDelegate):
         global total_packets2
         global packets_failed2
         global success_rate2
-
+        
         if (cHandle==37):
             global byte_array_2
 
@@ -1084,7 +1117,7 @@ class SensorsDelegate2(DefaultDelegate):
 
                     else:
                         tuple_data2 = tuple(tuple_data)
-
+                        print(tuple_data2)
                         if (tuple_data2[1] == 0):
                             if (helloPacketReceived2 == False):
                                 helloPacketReceived2 = True
@@ -1092,6 +1125,7 @@ class SensorsDelegate2(DefaultDelegate):
                                 connPacketReceived2 = True
                         elif (tuple_data2[1] == 4):
                             ch2.write(CRC8Packet.pack_data(HelloPacket(ACK_PACKET_ID)))
+                            relay_queue.put("SHOTS FIRED")
                             num_of_bytes += 1
                         
                         error_count2 = 0
@@ -1143,7 +1177,7 @@ class SensorsDelegate3(DefaultDelegate):
                 
                 if (len(byte_array_3) >= 20):
                     total_packets3 += 1
-
+                    
                     byte_array = byte_array_3[:20]
                     tuple_data = struct.unpack("BBHHHHHHHHBB", byte_array)
                     # print(tuple_data)
@@ -1162,14 +1196,16 @@ class SensorsDelegate3(DefaultDelegate):
 
                     else:
                         tuple_data3 = tuple(tuple_data)
-
+                        # print(tuple_data3)
                         if (tuple_data3[1] == 0):
                             if (helloPacketReceived3 == False):
                                 helloPacketReceived3 = True
                             elif (connPacketReceived3 == False):
                                 connPacketReceived3 = True
                         elif (tuple_data3[1] == 4):
+                            global relay_queue
                             ch3.write(CRC8Packet.pack_data(HelloPacket(ACK_PACKET_ID)))
+                            relay_queue.put("KANA SHOT")
                             num_of_bytes += 1
                         
                         error_count3 = 0
@@ -1189,7 +1225,7 @@ class SensorsDelegate3(DefaultDelegate):
 t1 = threading.Thread(target=BlunoGlove)
 t2 = threading.Thread(target=BlunoGun)
 t3 = threading.Thread(target=BlunoVest)
-t4 = threading.Thread(target=writeIndividualActionData)
+t4 = threading.Thread(target=pushData)
 
 # Main Function
 if __name__=='__main__':
@@ -1208,6 +1244,6 @@ if __name__=='__main__':
     t1.start()
     t2.start()    
     t3.start()
-    t4.start()
-    # relay.start()
-    # mqtt_thread.start()
+    # t4.start()
+    relay.start()
+    mqtt_thread.start()
