@@ -154,7 +154,7 @@ class RelayClient:
 
     
     async def main(self):
-        self.sock.connect(('172.26.190.81', 10000 + self.sn)) 
+        self.sock.connect(('172.26.190.39', 10000 + self.sn)) 
 
         print("connected")
 
@@ -203,23 +203,29 @@ class MQTTClient:
         mqttclient.subscribe("lasertag/vizgamestate")
         mqttclient.on_message = self.on_message
 
-        global ch2
-        global ch3
+        
 
         while True:
+            global ch2
+            global ch3
+
             if not mqtt_queue.empty():
                 msg = mqtt_queue.get()
                 if msg['type'] == "UPDATE":
                     if self.sn == 1:
                         hp = msg['game_state']['p1']['hp']
                         bullets = msg['game_state']['p1']['bullets']
-                        # ch2.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, bullets)))
-                        # ch3.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, hp)))
+                        if isinstance(ch2, bluepy.btle.Characteristics):
+                            ch2.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, bullets)))
+                        if isinstance(ch3, bluepy.btle.Characteristics):
+                            ch3.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, hp)))
                     else:
                         hp = msg['game_state']['p2']['hp']
                         bullets = msg['game_state']['p2']['bullets']
-                        # ch2.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, bullets)))
-                        # ch3.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, hp)))
+                        if isinstance(ch2, bluepy.btle.Characteristics):
+                            ch2.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, bullets)))
+                        if isinstance(ch3, bluepy.btle.Characteristics):
+                            ch3.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, hp)))
                         
                 
                     print("hp: " + str(hp) + "bullets: " + str(bullets))
@@ -365,6 +371,7 @@ def BlunoGun():
         bluno, ch2 = connectToBLEGun()
         hello_packet_start_time = time.time()
 
+        # print(type(ch2))
         ch2.write(CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID)))
         while not (helloPacketReceived2 and connPacketReceived2):
             try:
@@ -545,7 +552,7 @@ def pushData():
         
         # print(tuple_data1)
         if (connPacketReceived1) and (isinstance(tuple_data1, tuple)):
-            print("Enter inner loop")
+            # print("Enter inner loop")
             Gyroscope_X = tuple_data1[2]
             Gyroscope_Y = tuple_data1[3]
             Gyroscope_Z = tuple_data1[4]
@@ -1031,10 +1038,10 @@ class SensorsDelegate1(DefaultDelegate):
                         relay_queue.put(sending_data)
                         # print(tuple_data1)
                         # print(index)
-                        # print(str(index), str(tuple_data1))
-                        # index += 1
-                        # if (index == 33):
-                        #     index = 1
+                        print(str(index), str(tuple_data1))
+                        index += 1
+                        if (index == 33):
+                            index = 1
                         
                         if (tuple_data1[1] == 0):
                             if (helloPacketReceived1 == False):
@@ -1180,7 +1187,7 @@ class SensorsDelegate3(DefaultDelegate):
                     
                     byte_array = byte_array_3[:20]
                     tuple_data = struct.unpack("BBHHHHHHHHBB", byte_array)
-                    # print(tuple_data)
+                    print(tuple_data)
                     byte_array_3 = byte_array_3[20:]
                     
                     checksum_value = CRC8Packet.calculate_crc8(byte_array)
@@ -1225,7 +1232,7 @@ class SensorsDelegate3(DefaultDelegate):
 t1 = threading.Thread(target=BlunoGlove)
 t2 = threading.Thread(target=BlunoGun)
 t3 = threading.Thread(target=BlunoVest)
-t4 = threading.Thread(target=pushData)
+t4 = threading.Thread(target=writeIndividualActionData)
 
 # Main Function
 if __name__=='__main__':
@@ -1241,7 +1248,7 @@ if __name__=='__main__':
     # ic.join()
     # relay.join()
 
-    t1.start()
+    # t1.start()
     t2.start()    
     t3.start()
     # t4.start()
