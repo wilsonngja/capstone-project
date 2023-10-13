@@ -12,8 +12,8 @@
 #define numPixels 10
 Adafruit_NeoPixel NeoPixel(numPixels, neoPixelPin, NEO_GRB + NEO_KHZ800);
 
-int livesNum = 10; // number of HP (1 live, 10 HP)
-int HP = 100;
+int livesNum = 10; // number of HP (1 live, 10 HP, total = 100HP)
+//int HP = 100;
 
 #define RECV_PIN A3 // not pin 2
 unsigned long triggertime = 0;
@@ -30,11 +30,12 @@ int pulsecheck = 0;
 
 int pulsedelay;
 
-void health() {
-  HP -= 10;
-}
+//void health() {
+//  HP -= 10;
+//}
 
 void playerShot() {
+  /*
   livesNum--;
   NeoPixel.clear();
   for(int x = 0; x < livesNum; x++) { // neopixel
@@ -53,6 +54,7 @@ void playerShot() {
     delay(500);
     livesNum = 10;
   }
+  */
 }
 
 
@@ -105,6 +107,9 @@ void loop() {
     index = 0;
 
     if (calculateCRC8(incomingData, 20) == 0){
+      if (incomingData[PACKET_ID_INDEX] == DATA_PACKET_ID) {
+        livesNum = incomingData[2] / 10;
+      }
       
       // Sending Hello Packet
       if ((incomingData[PACKET_ID_INDEX] == HELLO_PACKET_ID) || (incomingData[PACKET_ID_INDEX] == CONN_EST_PACKET_ID)){
@@ -133,8 +138,17 @@ void loop() {
       }
 
       // Added in on October 11
-      if (incomingData[PACKET_ID_INDEX] == DATA_PACKET_ID) {
-        int hp_left = incomingData[2] ;
+      else if (incomingData[PACKET_ID_INDEX] == DATA_PACKET_ID) {
+        livesNum = incomingData[2] / 10;
+//        Serial.println(livesNum);/
+        for(int x = 0; x < livesNum; x++) { // neopixel
+          if (player ==  1) {
+            NeoPixel.setPixelColor(x, NeoPixel.Color(242, 133, 0)); // orange
+          } else if (player == 2) {
+            NeoPixel.setPixelColor(x, NeoPixel.Color(0, 0, 255)); // blue
+          }
+        }
+        NeoPixel.show(); 
       }
     }
   }
@@ -156,11 +170,11 @@ void loop() {
           struct Data_Packet data_packet;
           data_packet = computeDataPacketResponse(1);
           Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
-          isReadyToSendData = false;
+//          isReadyToSendData = f/alse;
           
           hitbywhichplayer = 1; // internal comms
           playerShot();
-          health();
+          //health();
           receivetime=millis();
           //Serial.println("PulseConfirmed");
         }

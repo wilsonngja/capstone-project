@@ -1,12 +1,12 @@
 # Import Libraries
-from bluepy.btle import Peripheral, UUID, DefaultDelegate, BTLEDisconnectError
+from bluepy.btle import Peripheral, UUID, DefaultDelegate, BTLEDisconnectError, Characteristic
 
 import threading
 
 
 import sys
 import time
-from PacketStructClass import HelloPacket, AckPacket
+from PacketStructClass import HelloPacket, AckPacket, DataPacket
 import CRC8Packet
 import struct
 import os
@@ -140,6 +140,11 @@ success_rate3 = 0.0
 
 relay_queue = Queue()
 
+
+msg = None
+hp = None
+bullets = None
+
 class RelayClient:
 
     def __init__(self, sn):
@@ -209,26 +214,37 @@ class MQTTClient:
             global ch2
             global ch3
 
+            global bullets
+            global hp
+
             if not mqtt_queue.empty():
                 msg = mqtt_queue.get()
                 if msg['type'] == "UPDATE":
                     if self.sn == 1:
-                        hp = msg['game_state']['p1']['hp']
+                        hp = msg['game_state']['p2']['hp']
                         bullets = msg['game_state']['p1']['bullets']
-                        if isinstance(ch2, bluepy.btle.Characteristics):
-                            ch2.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, bullets)))
-                        if isinstance(ch3, bluepy.btle.Characteristics):
-                            ch3.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, hp)))
+                        
+                        try:
+                            # print(type(hp), type(bullets))
+                            print("hp: " + str(hp) + "bullets: " + str(bullets))
+                            # if isinstance(ch2, Characteristic):
+                                # print(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, bullets)))
+                                # ch2.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, bullets)))
+                                
+                            # if isinstance(ch3, Characteristic):
+                                # ch3.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, hp)))
+                        except Exception as e:
+                            print(e)
                     else:
                         hp = msg['game_state']['p2']['hp']
                         bullets = msg['game_state']['p2']['bullets']
-                        if isinstance(ch2, bluepy.btle.Characteristics):
-                            ch2.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, bullets)))
-                        if isinstance(ch3, bluepy.btle.Characteristics):
-                            ch3.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, hp)))
+                        
+                        # if isinstance(ch2, Characteristic):
+                        #     ch2.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, bullets)))
+                        # if isinstance(ch3, Characteristic):
+                        #     ch3.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, hp)))
                         
                 
-                    print("hp: " + str(hp) + "bullets: " + str(bullets))
 
 # Function to connect to Bluno 1 and send data.
 def BlunoGlove():
@@ -259,6 +275,7 @@ def BlunoGlove():
 
         ch1.write(CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID)))
         while not (helloPacketReceived1 and connPacketReceived1):
+            print("FULL LOOP")
             try:
                 while True:
                     if bluno.waitForNotifications(3): # calls handleNotification()
@@ -394,6 +411,14 @@ def BlunoGun():
                     elif (time.time() - hello_packet_start_time > 3) and (helloPacketReceived2 == True) and (connPacketReceived2 == False):
                         ch2.write(CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID)))
                         hello_packet_start_time = time.time()
+                
+                    global bullets
+                    if (bullets != None):
+                        print("THERE ARE ", str(bullets), " bullets")
+                        ch2.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(bullets))))
+                        print("DATA SENT SUCCESSFULLY")
+                        bullets = None
+
 
                     
             except Exception as e:
@@ -477,7 +502,17 @@ def BlunoVest():
                     elif (time.time() - hello_packet_start_time > 3) and (helloPacketReceived3 == True) and (connPacketReceived3 == False):
                         ch3.write(CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID)))
                         hello_packet_start_time = time.time()
-            
+
+                    global hp
+                    
+                    if (hp != None):
+                        print("You have ", str(hp), " hp left.")
+                        # tuple_data = struct.unpack("BBHHHHHHHHBB", CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(hp))))
+                        # print(tuple_data[2])
+                        # print(struct.unpack("BBHHHHHHHHBB", DataPacket(DATA_PACKET_ID, int(hp))))
+                        ch3.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(hp))))
+                        print("Writing to vest is successful")
+                        hp = None
             
             except Exception as e:
                 bluno.disconnect()
@@ -949,6 +984,7 @@ def writeIndividualActionData():
         f.close()
 
 
+
 # Sensor Delegate for Bluno 1
 class SensorsDelegate1(DefaultDelegate):
     """
@@ -1034,12 +1070,12 @@ class SensorsDelegate1(DefaultDelegate):
 
                         Flex_Sensor_Value = tuple_data1[8]
                         Flex_Sensor_Value2 = tuple_data1[9]
-                        sending_data = str(Gyroscope_X) + ", " + str(Gyroscope_Y) + ", " + str(Gyroscope_Z) + ", " + str(Accelerometer_X) + ", " + str(Accelerometer_Y) + ", " + str(Accelerometer_Z) + ", " + str(Flex_Sensor_Value) + ", " + str(Flex_Sensor_Value2) + ", " + str(Button_Pressed)
-                        relay_queue.put(sending_data)
+                        sending_data = str(Gyroscope_X) + ", " + str(Gyroscope_Y) + ", " + str(Gyroscope_Z) + ", " + str(Accelerometer_X) + ", " + str(Accelerometer_Y) + ", " + str(Accelerometer_Z) + ", " + str(Flex_Sensor_Value) + ", " + str(Flex_Sensor_Value2)
                         # print(tuple_data1)
                         # print(index)
                         print(str(index), str(tuple_data1))
                         index += 1
+                        relay_queue.put(str(index) + " " + sending_data)
                         if (index == 33):
                             index = 1
                         
@@ -1064,8 +1100,6 @@ class SensorsDelegate1(DefaultDelegate):
                 helloPacketReceived1 = False
                 connPacketReceived1 = False
                 
-
-
 
 # Sensor Delegate for Bluno 2
 class SensorsDelegate2(DefaultDelegate):
@@ -1211,7 +1245,7 @@ class SensorsDelegate3(DefaultDelegate):
                                 connPacketReceived3 = True
                         elif (tuple_data3[1] == 4):
                             global relay_queue
-                            ch3.write(CRC8Packet.pack_data(HelloPacket(ACK_PACKET_ID)))
+                            # ch3.write(CRC8Packet.pack_data(HelloPacket(ACK_PACKET_ID)))
                             relay_queue.put("KANA SHOT")
                             num_of_bytes += 1
                         
@@ -1248,9 +1282,9 @@ if __name__=='__main__':
     # ic.join()
     # relay.join()
 
-    # t1.start()
-    t2.start()    
-    t3.start()
+    t1.start()
+    # t2.start()    
+    # t3.start()
     # t4.start()
-    relay.start()
-    mqtt_thread.start()
+    # relay.start()
+    # mqtt_thread.start()

@@ -1,9 +1,9 @@
 import crc8
 import struct
-from PacketStructClass import HelloPacket
-
-HelloPacketWOChecksumFormat = "BBHHHHHHHHB"
-HelloPacketFormat = "BBHHHHHHHHBB"
+from PacketStructClass import HelloPacket 
+from PacketStructClass import DataPacket  
+PacketWOChecksumFormat = "BBHHHHHHHHB"
+PacketFormat = "BBHHHHHHHHBB"
 
 def calculate_crc8(Packet):
     crc = crc8.crc8()
@@ -16,7 +16,7 @@ def pack_data(HelloPacket):
     crc = crc8.crc8()
     crc.reset()
 
-    HelloPacketWOChecksum = struct.pack(HelloPacketWOChecksumFormat,
+    HelloPacketWOChecksum = struct.pack(PacketWOChecksumFormat,
                                     HelloPacket.device_id,
                                     HelloPacket.packet_id,
                                     HelloPacket.padding_1,
@@ -30,7 +30,8 @@ def pack_data(HelloPacket):
                                     HelloPacket.padding_9)
     
     HelloPacket.checksum = calculate_crc8(HelloPacketWOChecksum)
-    return struct.pack(HelloPacketFormat, 
+    
+    return struct.pack(PacketFormat, 
                     HelloPacket.device_id,
                     HelloPacket.packet_id,
                     HelloPacket.padding_1,
@@ -44,36 +45,37 @@ def pack_data(HelloPacket):
                     HelloPacket.padding_9,
                     HelloPacket.checksum)
 
-def pack_ack_data(Packet):
+
+def pack_data_result(DataPacket):
     crc = crc8.crc8()
     crc.reset()
-
-    AckPacketWOChecksum = struct.pack("BBHHHHHHHHB",
-                                Packet.device_id,
-                                Packet.packet_id,
-                                Packet.padding_1,
-                                Packet.padding_2,
-                                Packet.padding_3,
-                                Packet.padding_4,
-                                Packet.padding_5,
-                                Packet.padding_6,
-                                Packet.padding_7,
-                                Packet.padding_8,
-                                Packet.padding_9)
     
-    Packet.checksum = calculate_crc8(AckPacketWOChecksum)
+    DataPacketWOChecksum = struct.pack(PacketWOChecksumFormat,
+                                DataPacket.device_id,
+                                DataPacket.packet_id,
+                                DataPacket.data,
+                                DataPacket.padding_1,
+                                DataPacket.padding_2,
+                                DataPacket.padding_3,
+                                DataPacket.padding_4,
+                                DataPacket.padding_5,
+                                DataPacket.padding_6,
+                                DataPacket.padding_7,
+                                DataPacket.padding_8)
+    
+    DataPacket.checksum = calculate_crc8(DataPacketWOChecksum)
     
     return struct.pack(PacketFormat, 
-                    Packet.device_id,
-                    Packet.packet_id,
-                    Packet.padding_1,
-                    Packet.padding_2,
-                    Packet.padding_3,
-                    Packet.padding_4,
-                    Packet.padding_5,
-                    Packet.padding_6,
-                    Packet.padding_7,
-                    Packet.padding_8,
-                    Packet.padding_9,
-                    Packet.checksum)
+                    DataPacket.device_id,
+                    DataPacket.packet_id,
+                    DataPacket.data,
+                    DataPacket.padding_1,
+                    DataPacket.padding_2,
+                    DataPacket.padding_3,
+                    DataPacket.padding_4,
+                    DataPacket.padding_5,
+                    DataPacket.padding_6,
+                    DataPacket.padding_7,
+                    DataPacket.padding_8,
+                    DataPacket.checksum)
 
