@@ -14,6 +14,7 @@ float flexInterval = 10;
 
 
 
+
 float VCC = 5;
 float flexResistor = 10000; //10K Ohms
 
@@ -80,31 +81,30 @@ void setup() {
   pinMode(FLEX_PIN1, INPUT);
   pinMode(FLEX_PIN2, INPUT);
 
-  
+  Serial.println("GGWP");
   setupImu();  
+  Serial.println("GGWP LIAO");
 }
 
 
 void loop() {
   struct Hello_Packet hello_packet_response;
-  
+  // Serial.print("LOL");
   // Check for data available
   while (Serial.available()) {
     if (index != 20) {
-      
       byte data = Serial.read();
       incomingData[index] = data;
+//      Serial.print(data);
       index += 1;
     } 
   }
+  
+  
 
- 
-
-
-  if (index == 20) {
-    index = 0;
-
+    
     if (calculateCRC8(incomingData, 20) == 0){
+      
       
       // Sending Hello Packet
       if ((incomingData[PACKET_ID_INDEX] == HELLO_PACKET_ID) || (incomingData[PACKET_ID_INDEX] == CONN_EST_PACKET_ID)){
@@ -131,9 +131,12 @@ void loop() {
       } 
 
 
-       
+      for (int i = 0; i < 20; i += 1) {
+        incomingData[i] = -1;
+      }
+      
+      index = 0;
     }
-  }
   
 
   // The part on sending data
@@ -143,27 +146,8 @@ void loop() {
 
     glove_data = getGloveReadings();
 
-    //Serial.print("GyroX: " +  String(glove_data.GyroX) + " ");
-    //Serial.print("GyroY: " +  String(glove_data.GyroY) + " ");
-    //Serial.print("GyroZ: " +  String(glove_data.GyroZ) + " ");
-
-    //Serial.print("AccX: " + String(glove_data.AccX) + " ");
-    //Serial.print("AccY: " + String(glove_data.AccY) + " ");
-    //Serial.print("AccZ: " + String(glove_data.AccZ) + " ");
-
-    //Serial.print("Flex1: " + String(glove_data.Flex1) + " ");
-    //Serial.println("Flex2: " + String(glove_data.Flex2) + " ");
     data_packet = computeDataPacketResponse(glove_data);
     Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
   }
   delay(10);
-  
-  
-}
-    
-    
-
-      
-    
-      
-   
+} 

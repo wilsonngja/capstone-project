@@ -2,8 +2,8 @@ import crc8
 import struct
 from PacketStructClass import HelloPacket 
 from PacketStructClass import DataPacket  
-PacketWOChecksumFormat = "BBHHHHHHHHB"
-PacketFormat = "BBHHHHHHHHBB"
+HelloPacketWOChecksumFormat = "BBHHHHHHHHB"
+HelloPacketFormat = "BBHHHHHHHHBB"
 
 def calculate_crc8(Packet):
     crc = crc8.crc8()
@@ -16,7 +16,7 @@ def pack_data(HelloPacket):
     crc = crc8.crc8()
     crc.reset()
 
-    HelloPacketWOChecksum = struct.pack(PacketWOChecksumFormat,
+    HelloPacketWOChecksum = struct.pack(HelloPacketWOChecksumFormat,
                                     HelloPacket.device_id,
                                     HelloPacket.packet_id,
                                     HelloPacket.padding_1,
@@ -30,8 +30,7 @@ def pack_data(HelloPacket):
                                     HelloPacket.padding_9)
     
     HelloPacket.checksum = calculate_crc8(HelloPacketWOChecksum)
-    
-    return struct.pack(PacketFormat, 
+    return struct.pack(HelloPacketFormat, 
                     HelloPacket.device_id,
                     HelloPacket.packet_id,
                     HelloPacket.padding_1,
@@ -45,7 +44,39 @@ def pack_data(HelloPacket):
                     HelloPacket.padding_9,
                     HelloPacket.checksum)
 
+def pack_ack_data(Packet):
+    crc = crc8.crc8()
+    crc.reset()
 
+    AckPacketWOChecksum = struct.pack("BBHHHHHHHHB",
+                                Packet.device_id,
+                                Packet.packet_id,
+                                Packet.padding_1,
+                                Packet.padding_2,
+                                Packet.padding_3,
+                                Packet.padding_4,
+                                Packet.padding_5,
+                                Packet.padding_6,
+                                Packet.padding_7,
+                                Packet.padding_8,
+                                Packet.padding_9)
+    
+    Packet.checksum = calculate_crc8(AckPacketWOChecksum)
+    
+    return struct.pack(PacketFormat, 
+                    Packet.device_id,
+                    Packet.packet_id,
+                    Packet.padding_1,
+                    Packet.padding_2,
+                    Packet.padding_3,
+                    Packet.padding_4,
+                    Packet.padding_5,
+                    Packet.padding_6,
+                    Packet.padding_7,
+                    Packet.padding_8,
+                    Packet.padding_9,
+                    Packet.checksum)
+                    
 def pack_data_result(DataPacket):
     crc = crc8.crc8()
     crc.reset()

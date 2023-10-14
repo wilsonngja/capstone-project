@@ -274,14 +274,19 @@ def BlunoGlove():
         connectionNotReceived = (helloPacketReceived1 == True) and (connPacketReceived1 == False) 
 
         ch1.write(CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID)))
-        while not (helloPacketReceived1 and connPacketReceived1):
-            print("FULL LOOP")
+        print("HELLO ", struct.unpack("BBHHHHHHHHBB", CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID))))
+        while not (helloPacketReceived1):
+            # print("FULL LOOP")
             try:
                 while True:
                     if bluno.waitForNotifications(3): # calls handleNotification()
-                        if ((helloPacketReceived1 == True) and (connPacketReceived1 == False)):
+                        if not (helloPacketReceived1):
                             ch1.write(CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID)))
+                            helloPacketReceived1 = True
 
+                        elif ((helloPacketReceived1 == True) and (connPacketReceived1 == False)):
+                            connPacketReceived1 = True
+                            
                         elif (helloPacketReceived1 and connPacketReceived1 and (count1 == 0)):
                             Gyroscope_X = "Connected"
                             Gyroscope_Y = "Connected"
@@ -294,12 +299,14 @@ def BlunoGlove():
                             count1 += 1
 
                     
-                    elif (time.time() - hello_packet_start_time > 3) and helloPacketNotReceived:
+                    elif (time.time() - hello_packet_start_time > 3) and (helloPacketReceived1 == False):
                         ch1.write(CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID)))
+                        # print("INNER HELLO", struct.unpack("BBHHHHHHHHBB", CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID))))
                         hello_packet_start_time = time.time()
           
-                    elif (time.time() - hello_packet_start_time > 3) and connectionNotReceived:
+                    elif (time.time() - hello_packet_start_time > 3) and (connPacketReceived1 == False):
                         ch1.write(CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID)))
+                        # print("INNER HELLO", struct.unpack("BBHHHHHHHHBB", CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID))))
                         hello_packet_start_time = time.time()
                     
 
@@ -339,7 +346,7 @@ def connectToBLEGlove():
     global bluno1
 
     try:
-        bluno1 = Peripheral(BLUNO_GLOVE_PLAYER_2_MAC_ADDRESS, "public")
+        bluno1 = Peripheral(BLUNO_GLOVE_PLAYER_1_MAC_ADDRESS, "public")
         bluno1.setDelegate(SensorsDelegate1())
 
         print("GLOVE CONNECTED")
@@ -1014,6 +1021,7 @@ class SensorsDelegate1(DefaultDelegate):
         global END
 
         if (cHandle==37):
+            # print(data)
             global byte_array_1
             global error_count1
             global fragment_packet_count1

@@ -243,10 +243,12 @@ def Bluno(deviceMACAddress, deviceID):
                     # Hello Packet if the hello packet response is not received
                     # Connection Established Packet if connection established packet is not received
                     elif (time.time() - hello_packet_start_time > NOTIFICATION_TIMEOUT) and helloPacketNotReceived:
+                        # print("Rabs kebabs")
                         ch.write(CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID)))
                         hello_packet_start_time = time.time()
                     
                     elif (time.time() - hello_packet_start_time > NOTIFICATION_TIMEOUT) and connectionNotReceived:
+                        # print("Rabs kebabs")
                         ch.write(CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID)))
                         hello_packet_start_time = time.time()
             
@@ -296,7 +298,7 @@ class SensorsDelegate(DefaultDelegate):
             # Check the Device ID
             if (data[0] == PLAYER_1_GLOVE_DEVICE_ID):
                 try:
-                
+                    
                     # Push the received data to byteArray
                     byteArrayGlove1.extend(data)
                     global errorCountGlove1
@@ -470,8 +472,8 @@ class SensorsDelegate(DefaultDelegate):
 
 # Declare Thread
 t1 = threading.Thread(target=Bluno, args=(PLAYER_1_GLOVE_MAC_ADDRESS, PLAYER_1_GLOVE_DEVICE_ID))
-t2 = threading.Thread(target=Bluno, args=(PLAYER_1_GUN_MAC_ADDRESS, PLAYER_1_GUN_DEVICE_ID))
-t3 = threading.Thread(target=Bluno, args=(PLAYER_1_VEST_MAC_ADDRESS, PLAYER_1_VEST_DEVICE_ID))
+t2 = threading.Thread(target=Bluno, args=(PLAYER_3_GUN_MAC_ADDRESS, PLAYER_1_GUN_DEVICE_ID))
+t3 = threading.Thread(target=Bluno, args=(PLAYER_3_VEST_MAC_ADDRESS, PLAYER_1_VEST_DEVICE_ID))
 
 # Main Function
 if __name__=='__main__':
