@@ -17,6 +17,8 @@ import json
 import asyncio
 from queue import Queue
 
+from time import perf_counter
+
 import random
 
 count = 0
@@ -274,7 +276,7 @@ def BlunoGlove():
         connectionNotReceived = (helloPacketReceived1 == True) and (connPacketReceived1 == False) 
 
         ch1.write(CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID)))
-        print("HELLO ", struct.unpack("BBHHHHHHHHBB", CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID))))
+        # print("HELLO ", struct.unpack("BBHHHHHHHHBB", CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID))))
         while not (helloPacketReceived1):
             # print("FULL LOOP")
             try:
@@ -311,6 +313,7 @@ def BlunoGlove():
                     
 
             except Exception as e:
+                print("GLOVE DISCONNECTED")
                 bluno.disconnect()
                 global YELLOW
                 global END
@@ -360,6 +363,7 @@ def connectToBLEGlove():
         connPacketReceived1 = False
         # print("Exception occurred in Connect", e)
         # print("Unable to connect to glove")
+        print("GLOVE DISCONNECTED")
         Flex_Sensor_Value = YELLOW + "Unable to connect... Trying again" + END
         Flex_Sensor_Value2 = YELLOW + "Unable to connect... Trying again" + END
         Accelerometer_X = YELLOW + "Unable to connect... Trying again" + END
@@ -991,6 +995,7 @@ def writeIndividualActionData():
         f.close()
 
 
+sensortimer = perf_counter()
 
 # Sensor Delegate for Bluno 1
 class SensorsDelegate1(DefaultDelegate):
@@ -1027,6 +1032,13 @@ class SensorsDelegate1(DefaultDelegate):
             global fragment_packet_count1
             global index
 
+            ###
+            global sensortimer
+            if perf_counter() > sensortimer + 1.0:
+                index = 0
+            sensortimer = perf_counter()
+            ###
+            
             try:
                 byte_array_1.extend(data)
                 
@@ -1104,6 +1116,7 @@ class SensorsDelegate1(DefaultDelegate):
                     success_rate1 = ((total_packets1 - packets_failed1)/total_packets1) * 100.0
 
             except Exception as e:
+                print("GLOVE DISCONNECTED")
                 # print("Error in ")
                 helloPacketReceived1 = False
                 connPacketReceived1 = False

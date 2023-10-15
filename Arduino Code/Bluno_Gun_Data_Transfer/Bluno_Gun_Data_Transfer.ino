@@ -150,7 +150,7 @@ void loop() {
   // The part on sending data
   if (isReadyToSendData) {
     struct Data_Packet data_packet;
-    int PB_Value = random(0,2);
+    // int PB_Value = random(0,2);
     // data_packet = computeDataPacketResponse();
     // Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
 
