@@ -13,6 +13,9 @@ def calculate_crc8(Packet):
     return (crc.digest())[0]
 
 def pack_data(DataPkt, bullet):
+    global PacketWOChecksumFormat
+    global PacketFormat
+    
     crc = crc8.crc8()
     crc.reset()
 

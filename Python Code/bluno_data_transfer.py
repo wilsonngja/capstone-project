@@ -229,22 +229,14 @@ class MQTTClient:
                         try:
                             # print(type(hp), type(bullets))
                             print("hp: " + str(hp) + "bullets: " + str(bullets))
-                            # if isinstance(ch2, Characteristic):
-                                # print(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, bullets)))
-                                # ch2.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, bullets)))
-                                
-                            # if isinstance(ch3, Characteristic):
-                                # ch3.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, hp)))
+                            
                         except Exception as e:
                             print(e)
                     else:
                         hp = msg['game_state']['p2']['hp']
                         bullets = msg['game_state']['p2']['bullets']
                         
-                        # if isinstance(ch2, Characteristic):
-                        #     ch2.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, bullets)))
-                        # if isinstance(ch3, Characteristic):
-                        #     ch3.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, hp)))
+                    
                         
                 
 
@@ -425,15 +417,16 @@ def BlunoGun():
                 
                     global bullets
                     if (bullets != None):
-                        print("THERE ARE ", str(bullets), " bullets")
+                        # print("THERE ARE ", str(bullets), " bullets")
                         ch2.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(bullets))))
-                        print("DATA SENT SUCCESSFULLY")
+                        # print("DATA SENT SUCCESSFULLY")
                         bullets = None
 
 
                     
             except Exception as e:
                 bluno.disconnect()
+                print(e)
                 Button_Pressed = YELLOW + "Disconnected" + END
                 
                 helloPacketReceived2 = False
@@ -517,12 +510,12 @@ def BlunoVest():
                     global hp
                     
                     if (hp != None):
-                        print("You have ", str(hp), " hp left.")
+                        # print("You have ", str(hp), " hp left.")
                         # tuple_data = struct.unpack("BBHHHHHHHHBB", CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(hp))))
                         # print(tuple_data[2])
                         # print(struct.unpack("BBHHHHHHHHBB", DataPacket(DATA_PACKET_ID, int(hp))))
                         ch3.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(hp))))
-                        print("Writing to vest is successful")
+                        # print("Writing to vest is successful")
                         hp = None
             
             except Exception as e:
@@ -1095,7 +1088,7 @@ class SensorsDelegate1(DefaultDelegate):
                         # print(index)
                         print(str(index), str(tuple_data1))
                         index += 1
-                        relay_queue.put(str(index) + " " + sending_data)
+                        relay_queue.put(sending_data)
                         if (index == 33):
                             index = 1
                         
@@ -1307,5 +1300,5 @@ if __name__=='__main__':
     # t2.start()    
     # t3.start()
     # t4.start()
-    # relay.start()
-    # mqtt_thread.start()
+    relay.start()
+    mqtt_thread.start()

@@ -4,6 +4,8 @@ from PacketStructClass import HelloPacket
 from PacketStructClass import DataPacket  
 HelloPacketWOChecksumFormat = "BBHHHHHHHHB"
 HelloPacketFormat = "BBHHHHHHHHBB"
+PacketWOChecksumFormat = "BBHHHHHHHHB"
+PacketFormat = "BBHHHHHHHHBB"
 
 def calculate_crc8(Packet):
     crc = crc8.crc8()

@@ -8,7 +8,7 @@
 int lastButtonState = HIGH;
 int currentButtonState;
 
-int shotNum = -1;
+int shotNum = 0;
 
 #define neoPixelPin 2
 #define numPixels 6
@@ -56,11 +56,18 @@ void setIrModOutput() {
 }
 
 
+void updateBullet(int bulletsLeft) {
+    NeoPixel.clear();
+    for (int i = 0; i < 6 - bulletsLeft; i += 1) {
+      NeoPixel.setPixelColor(i, NeoPixel.Color(24, 0, 0));
+    }
+    NeoPixel.show();  
+}
+
+
 void LEDControl() {
-   shotNum += 1;
-   // Serial.println(shotNum);
-   // Serial.println("ENTER");
-    for(int x = 0; x <= shotNum; x++) { // neopixel
+    NeoPixel.clear();
+    for(int x = shotNum - 1; x >= 0; x--) { // neopixel
       NeoPixel.setPixelColor(x, NeoPixel.Color(24, 0, 0));
     }
     NeoPixel.show(); 
@@ -68,13 +75,13 @@ void LEDControl() {
     delay(10);
     digitalWrite(ledPin, LOW);
 
-    if(shotNum == 5 || reload == 1) {
+    if(shotNum == 1 || reload == 1) {
       
       NeoPixel.clear();
       delay(200);
       NeoPixel.show(); 
-      shotNum = -1;
-      reload = 0;
+      //shotNum = -1;
+      //reload = 0;
     }
 }
 
@@ -87,11 +94,17 @@ void setup() {
 
   setIrModOutput();
   TIMSK2 = _BV(OCIE2B);
+  NeoPixel.clear();
+  for(int x = 5; x >= 0; x--) { // neopixel
+      NeoPixel.setPixelColor(x, NeoPixel.Color(24, 0, 0));
+    }
+    NeoPixel.show(); 
 }
-///
 
 void loop() {
   struct Hello_Packet hello_packet_response;
+
+  ;
   
   // Check for data available
   while (Serial.available()) {
@@ -105,13 +118,14 @@ void loop() {
 
  
 
-
+  // When full Data Packet arrive
   if (index == 20) {
     index = 0;
 
+    // If checksum is correct (0)    
     if (calculateCRC8(incomingData, 20) == 0){
       
-      // Sending Hello Packet
+      // If receiving packet is the Hello Packet for Handshaking
       if ((incomingData[PACKET_ID_INDEX] == HELLO_PACKET_ID) || (incomingData[PACKET_ID_INDEX] == CONN_EST_PACKET_ID)){
         // Hello Packet is correctly computed, hence write a response to send back to Relay Node.
         hello_packet_response = computeHelloPacketResponse();
@@ -140,7 +154,15 @@ void loop() {
 
       // Added in on October 11
       if (incomingData[PACKET_ID_INDEX] == DATA_PACKET_ID) {
-        int bullets_left = incomingData[2] ;
+        int shotNum = 6 - incomingData[2];
+        
+//        Serial.println(incomingData[2]);
+        
+//        shotNum = 6- bullets_left;
+        
+        updateBullet(shotNum);
+
+          
       }
 
        
@@ -150,9 +172,6 @@ void loop() {
   // The part on sending data
   if (isReadyToSendData) {
     struct Data_Packet data_packet;
-    // int PB_Value = random(0,2);
-    // data_packet = computeDataPacketResponse();
-    // Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
 
     if (shotNum < 0) {
       NeoPixel.clear();
@@ -165,7 +184,7 @@ void loop() {
   if(lastButtonState == LOW && currentButtonState == HIGH) { // button pressed
     activatePulse = 1;
     triggerTime = millis();
-    LEDControl();
+    // LEDControl();
     shotFired = 1;
     struct Data_Packet data_packet;
 
@@ -174,7 +193,6 @@ void loop() {
     isReadyToSendData = false;
     delay(10);
     
-//    delay(10);/
   }
   else if(lastButtonState == HIGH && currentButtonState == LOW) {
   }
@@ -201,7 +219,7 @@ void loop() {
     }
     
   }
-  delay(10);
+  delay(7);
   
   
   

@@ -13,9 +13,14 @@ import random
 from paho.mqtt import client as mqttclient
 from queue import Queue
 
+from time import perf_counter
+
 import socket
 import json
 import asyncio
+
+
+index  = 1
 
 # YELLOW/WHITE = PLAYER 1
 # BLUE = PLAYER 2
@@ -57,6 +62,7 @@ PLAYER_3_GLOVE_MAC_ADDRESS ="D0:39:72:C8:54:8D"
 PLAYER_3_GUN_MAC_ADDRESS = "D0:39:72:C8:56:46"
 PLAYER_3_VEST_MAC_ADDRESS = "D0:39:72:C8:57:2E"
 
+DEVICE = {1: "GLOVE", 2: "GUN", 3: "VESt"}
 
 PACKET_FORMAT = "BBHHHHHHHHBB"
 
@@ -107,6 +113,14 @@ CHECKSUM_CORRECT_VALUE = 0
 
 # Maximum Error before assuming fragmentation issue
 ERROR_MAX_COUNT = 3
+
+msg = None
+hp = None
+bullets = None
+
+sensortimer = perf_counter()
+
+
 class RelayClient:
     def __init__(self, sn):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -170,6 +184,8 @@ class MQTTClient:
             global ch2
             global ch3
 
+            global bullets
+            global hp
             if not mqtt_queue.empty():
                 msg = mqtt_queue.get()
                 if msg['type'] == "UPDATE":
@@ -209,8 +225,12 @@ def Bluno(deviceMACAddress, deviceID):
         global errorCountGun1
         global errorCountVest1
 
+        helloPacketReceived = False
+        connPacketReceived = False
+
         # Connecting to the Bluno
         bluno, ch = connectToBLE(deviceMACAddress, deviceID)
+        print(DEVICE[deviceID], "connected")
 
         # Start time is used here to determine the duration whether packet drops
         hello_packet_start_time = time.time()
@@ -235,8 +255,25 @@ def Bluno(deviceMACAddress, deviceID):
                         # If connection has already been established, send a statement that the device is connected
                         # To be shown once only
                         elif (connectEstablished and (count == 0)):
-                            print(deviceID + " connected")
+                            print(DEVICE[deviceID] + " connected")
                             count += 1
+                        
+
+                        if (deviceID == 2):
+                            global bullets
+                            if (bullets != None):
+                                print("THERE ARE ", str(bullets), " bullets")
+                                ch2.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(bullets))))
+                                print("Writing to Gun is successful")
+                                bullets = None
+                        
+                        if (deviceID == 3):
+                            global hp
+                            if (hp != None):
+                                print("You have ", str(hp), " hp left.")
+                                ch3.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(hp))))
+                                print("Writing to Vest is successful")
+                                hp = None
 
 
                     # If after 3 seconds and response has not been received, send a new packet
@@ -255,9 +292,8 @@ def Bluno(deviceMACAddress, deviceID):
             except Exception as e:
                 # Show the exception and reset the settings
                 print(e)
+                print(DEVICE[deviceID], "disconnected from 'Bluno' function...")
                 bluno.disconnect()
-                helloPacketReceived = False
-                connPacketReceived = False
                 count = 0
                 break
 
@@ -270,6 +306,7 @@ def connectToBLE(deviceMACAddress, deviceID):
 
         return (bluno, ch)
     except Exception as e:
+        print(DEVICE[deviceID], "disconnected from 'connectToBLE' function...")
         Bluno(deviceMACAddress, deviceID)
         
                 
@@ -298,7 +335,13 @@ class SensorsDelegate(DefaultDelegate):
             # Check the Device ID
             if (data[0] == PLAYER_1_GLOVE_DEVICE_ID):
                 try:
-                    
+                    global sensortimer
+                    global index
+
+                    if perf_counter() > sensortimer + 1.0:
+                        index = 1
+                    sensortimer = perf_counter()
+
                     # Push the received data to byteArray
                     byteArrayGlove1.extend(data)
                     global errorCountGlove1
@@ -323,13 +366,13 @@ class SensorsDelegate(DefaultDelegate):
                                 helloPacketReceivedGlove1 = False
                                 connPacketReceivedGlove1 = False
                                 errorCountGlove1 = 0
-                                bluno.disconnect()
+                                self.bluno.disconnect()
                         else:
                             # Checksum is 0 - Data received is correct and not corrupted
                             tuple_data1 = tuple(tuple_data)
 
                             # Printing out the data and sending over to External Comms
-                            print("GLOVE: ", tuple_data1)
+                            # print("GLOVE: ", tuple_data1)
                             Gyroscope_X = tuple_data1[2]
                             Gyroscope_Y = tuple_data1[3]
                             Gyroscope_Z = tuple_data1[4]
@@ -340,7 +383,7 @@ class SensorsDelegate(DefaultDelegate):
 
                             Flex_Sensor_Value = tuple_data1[8]
                             Flex_Sensor_Value2 = tuple_data1[9]
-                            sending_data = str(Gyroscope_X) + ", " + str(Gyroscope_Y) + ", " + str(Gyroscope_Z) + ", " + str(Accelerometer_X) + ", " + str(Accelerometer_Y) + ", " + str(Accelerometer_Z) + ", " + str(Flex_Sensor_Value) + ", " + str(Flex_Sensor_Value2) + ", " + str(Button_Pressed)
+                            sending_data = str(Gyroscope_X) + ", " + str(Gyroscope_Y) + ", " + str(Gyroscope_Z) + ", " + str(Accelerometer_X) + ", " + str(Accelerometer_Y) + ", " + str(Accelerometer_Z) + ", " + str(Flex_Sensor_Value) + ", " + str(Flex_Sensor_Value2)
                             relay_queue.put(sending_data)
                             
                             # Training data portion
@@ -356,11 +399,12 @@ class SensorsDelegate(DefaultDelegate):
                                     connPacketReceivedGlove1 = True
         
                             errorCountGlove1 = 0
-
                 except Exception as e:
                     print(e)
+                    print(DEVICE[self.deviceID], "disconnected from Delegate...")
                     helloPacketReceivedGlove1 = False
                     connPacketReceivedGlove1 = False
+                    
                                     
             elif (data[0] == PLAYER_1_GUN_DEVICE_ID):
                 try:
@@ -388,11 +432,10 @@ class SensorsDelegate(DefaultDelegate):
                                 errorCountGun1 = 0
                                 helloPacketReceivedGun1 = False
                                 connPacketReceivedGun1 = False
-                                bluno.disconnect()
+                                self.bluno.disconnect()
 
                         else:
                             # Data is correct.
-
                             tuple_data2 = tuple(tuple_data)
                             print("GUN: ", tuple_data2)
                             print(tuple_data2)
@@ -414,6 +457,8 @@ class SensorsDelegate(DefaultDelegate):
                             # Reset the count since data received is correct
                             errorCountGun1 = 0
                 except Exception as e:
+                    print(e)
+                    print(DEVICE[self.deviceID], "disconnected from Delegate...")
                     helloPacketReceivedGun1 = False
                     connPacketReceivedGun1 = False
                     
@@ -445,7 +490,7 @@ class SensorsDelegate(DefaultDelegate):
                                 helloPacketReceivedVest1 = False
                                 connPacketReceivedVest1 = False
                                 errorCountVest1 = 0
-                                bluno.disconnect()
+                                self.bluno.disconnect()
                                 
                         else:
                             # Data received is correct
@@ -467,13 +512,14 @@ class SensorsDelegate(DefaultDelegate):
                         errorCountVest1 = 0
                 except Exception as e:
                     print(e)
+                    print(DEVICE[self.deviceID], "disconnected from Delegate...")
                     helloPacketReceivedVest1 = False
                     connPacketReceivedVest1 = False
 
 # Declare Thread
 t1 = threading.Thread(target=Bluno, args=(PLAYER_1_GLOVE_MAC_ADDRESS, PLAYER_1_GLOVE_DEVICE_ID))
-t2 = threading.Thread(target=Bluno, args=(PLAYER_3_GUN_MAC_ADDRESS, PLAYER_1_GUN_DEVICE_ID))
-t3 = threading.Thread(target=Bluno, args=(PLAYER_3_VEST_MAC_ADDRESS, PLAYER_1_VEST_DEVICE_ID))
+t2 = threading.Thread(target=Bluno, args=(PLAYER_1_GUN_MAC_ADDRESS, PLAYER_1_GUN_DEVICE_ID))
+t3 = threading.Thread(target=Bluno, args=(PLAYER_1_VEST_MAC_ADDRESS, PLAYER_1_VEST_DEVICE_ID))
 
 # Main Function
 if __name__=='__main__':
@@ -486,9 +532,11 @@ if __name__=='__main__':
     mqtt_thread = threading.Thread(target=mqtt_client.run)
     
 
-    t1.start()
-    # t2.start()    
-    # t3.start()
-    # relay.start()
-    # mqtt_thread.start()
+
+    # t1.start()
+    t2.start()    
+    t3.start()
+    # relay.join()
+    relay.start()
+    mqtt_thread.start()
 
