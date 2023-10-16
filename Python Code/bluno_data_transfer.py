@@ -404,6 +404,7 @@ def BlunoGun():
                             ch2.write(CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID)))
                         
                         elif (helloPacketReceived2 and connPacketReceived2 and (count2 == 0)):
+                            print("GUN CONNECTED")
                             Button_Pressed = "Connected"
                             count2 += 1
 
@@ -427,6 +428,7 @@ def BlunoGun():
             except Exception as e:
                 bluno.disconnect()
                 print(e)
+                print("GUN DISCONNECTED")
                 Button_Pressed = YELLOW + "Disconnected" + END
                 
                 helloPacketReceived2 = False
@@ -453,7 +455,7 @@ def connectToBLEGun():
         # Establish Delegate to handle notification
         bluno2.setDelegate(SensorsDelegate2())
 
-        print("GUN CONNECTED")
+        
         # Retrieve Service and Characteristics
         svc = bluno2.getServiceByUUID("dfb0")
         ch = svc.getCharacteristics("dfb1")[0]
@@ -461,6 +463,7 @@ def connectToBLEGun():
     
         return (bluno2, ch)
     except Exception as e:
+        print("GUN DISCONNECTED")
         helloPacketReceived2 = False
         connPacketReceived2 = False
         # print("Unable to connect to gun")
@@ -496,6 +499,7 @@ def BlunoVest():
                             ch3.write(CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID)))
                         
                         elif (helloPacketReceived3 and connPacketReceived3 and (count3 == 0)):
+                            print("VEST CONNECTED")
                             Ir_Sensor = "Connected"             
                             count3 += 1
 
@@ -510,12 +514,12 @@ def BlunoVest():
                     global hp
                     
                     if (hp != None):
-                        # print("You have ", str(hp), " hp left.")
+                        print("You have ", str(hp), " hp left.")
                         # tuple_data = struct.unpack("BBHHHHHHHHBB", CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(hp))))
                         # print(tuple_data[2])
                         # print(struct.unpack("BBHHHHHHHHBB", DataPacket(DATA_PACKET_ID, int(hp))))
                         ch3.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(hp))))
-                        # print("Writing to vest is successful")
+                        print("Writing to vest is successful")
                         hp = None
             
             except Exception as e:
@@ -537,12 +541,12 @@ def connectToBLEVest():
     global bluno3
     # Establish connection to Bluno3
     try:
-        bluno3 = Peripheral(BLUNO_VEST_PLAYER_1_MAC_ADDRESS, "public")
+        bluno3 = Peripheral(BLUNO_VEST_PLAYER_2_MAC_ADDRESS, "public")
 
         # Establish Delegate to handle notification
         bluno3.setDelegate(SensorsDelegate3())
     
-        print("VEST CONNECTED")
+        
         # Retrieve Service and Characteristics
         svc = bluno3.getServiceByUUID("dfb0")
         ch = svc.getCharacteristics("dfb1")[0]
@@ -1190,6 +1194,7 @@ class SensorsDelegate2(DefaultDelegate):
                     success_rate2 = ((total_packets2 - packets_failed2) /total_packets2 ) * 100.0
                    
             except Exception as e:
+                print("Gun Disconnected")
                 helloPacketReceived2 = False
                 connPacketReceived2 = False
 
@@ -1271,6 +1276,7 @@ class SensorsDelegate3(DefaultDelegate):
             
             
             except Exception as e:
+                print("Vest disconnected")
                 helloPacketReceived3 = False
                 connPacketReceived3 = False
 
@@ -1296,9 +1302,9 @@ if __name__=='__main__':
     # ic.join()
     # relay.join()
 
-    t1.start()
-    # t2.start()    
-    # t3.start()
+    # t1.start()
+    t2.start()    
+    t3.start()
     # t4.start()
     relay.start()
     mqtt_thread.start()

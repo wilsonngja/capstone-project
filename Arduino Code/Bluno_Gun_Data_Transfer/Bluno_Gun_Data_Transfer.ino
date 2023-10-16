@@ -62,6 +62,9 @@ void updateBullet(int bulletsLeft) {
       NeoPixel.setPixelColor(i, NeoPixel.Color(24, 0, 0));
     }
     NeoPixel.show();  
+    digitalWrite(ledPin, HIGH); // led
+    delay(10);
+    digitalWrite(ledPin, LOW);
 }
 
 

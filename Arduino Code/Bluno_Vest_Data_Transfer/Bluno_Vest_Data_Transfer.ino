@@ -125,6 +125,7 @@ void loop() {
         }
 
         // Make sure the 2 handshake start
+        
         if (hasReceivedHelloPacket == false) {
           Serial.write((uint8_t*) &hello_packet_response, sizeof(hello_packet_response));  
           hasReceivedHelloPacket = true;  
