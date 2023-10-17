@@ -42,10 +42,10 @@ DATA_PACKET_ID = 4
 YELLOW = "\033[93m"
 END = '\033[0m'
 
-# Characteristic Objects
-chGlove1 = None
-chGun1 = None
-chVest1 = None
+# Characteristic Objects (SEEMS LIKE IT'S NOT NEEDED BUT COMMENTED OUT TO CHECK)
+# chGlove1 = None
+# chGun1 = None
+# chVest1 = None
 
 # Player 1 MAC Addresses
 PLAYER_1_GLOVE_MAC_ADDRESS = "D0:39:72:E4:93:9D"
@@ -121,6 +121,7 @@ bullets = None
 sensortimer = perf_counter()
 
 
+# Sending Data over to External Comms
 class RelayClient:
     def __init__(self, sn):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -146,6 +147,7 @@ class RelayClient:
         except KeyboardInterrupt:
             pass
 
+# Receiving Data from External Comms
 class MQTTClient:
 
     def __init__(self, sn):
@@ -229,28 +231,25 @@ def Bluno(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived):
         # connPacketReceived = False
 
         # Connecting to the Bluno
-        print(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived)
-        bluno, ch, receivedHello, receivedConn = connectToBLE(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived)
-        print(DEVICE[deviceID], "connected")
+        # print(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived)
+        try:
+            bluno, ch, receivedHello, receivedConn = connectToBLE(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived)
+            print(DEVICE[deviceID], "connected")
+            # Start time is used here to determine the duration whether packet drops
+            hello_packet_start_time = time.time()
 
-        # Start time is used here to determine the duration whether packet drops
-        hello_packet_start_time = time.time()
 
-        # Boolean expression for whether Handshaking process is complete
-        helloPacketNotReceived = (helloPacketReceived == False)
-        connectionNotReceived = (helloPacketReceived == True) and (connPacketReceived == False) 
-        
-        
-        # Initiate Hello Packet to the Bluno and wait for response
-        ch.write(CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID)))
+            # Boolean expression for whether Handshaking process is complete
+            helloPacketNotReceived = (helloPacketReceived == False)
+            connectionNotReceived = (helloPacketReceived == True) and (connPacketReceived == False) 
+            
+            # Initiate Hello Packet to the Bluno and wait for response
+            ch.write(CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID)))
 
-        
-        while not (helloPacketReceived and connPacketReceived):
-            try:
-                
-
-                    
-                while True:
+            # Run this until Handshaking is done
+            while not (helloPacketReceived and connPacketReceived):
+                try:
+                    # Assign different flags for different devices
                     global receivedHelloPacket
                     global receivedConnPacket
 
@@ -263,72 +262,82 @@ def Bluno(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived):
                     elif (DEVICE[deviceID] == 'VEST'):
                         receivedHelloPacket = helloPacketReceivedVest1
                         receivedConnPacket = connPacketReceivedVest1
-                    connectEstablished = receivedHelloPacket and receivedConnPacket
-                    # Wait for Notification with a time out of 3 seconds
-                    if bluno.waitForNotifications(NOTIFICATION_TIMEOUT):
-                        # Check if the hello packet has been received but connection established packet not received
-                        if not (receivedHelloPacket):
+
+                    # Will be stuck 
+                    while True:
+                        
+
+                        connectEstablished = receivedHelloPacket and receivedConnPacket
+                        # Wait for Notification with a time out of 3 seconds
+                        if bluno.waitForNotifications(NOTIFICATION_TIMEOUT):
+                            # Check if the hello packet has been received but connection established packet not received
+                            if not (receivedHelloPacket):
+                                print("CONNECTING EST PACK")
+                                ch.write(CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID)))
+                                receivedHelloPacket = True
+                            elif not (receivedConnPacket):
+                                receivedConnPacket = True
+                                print("Handshake done for: ",  DEVICE[deviceID])
+                            # If connection has already been established, send a statement that the device is connected
+                            # To be shown once only
+
+                            # elif (connectEstablished and (count == 0)):
+                            #     print("Handshake done for: ",  DEVICE[deviceID])
+                            #     count += 1
+                            
+
+                            if (deviceID == 2):
+                                global bullets
+                                if (bullets != None):
+                                    print("THERE ARE ", str(bullets), " bullets")
+                                    ch2.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(bullets))))
+                                    print("Writing to Gun is successful")
+                                    bullets = None
+                            
+                            if (deviceID == 3):
+                                global hp
+                                if (hp != None):
+                                    print("You have ", str(hp), " hp left.")
+                                    ch3.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(hp))))
+                                    print("Writing to Vest is successful")
+                                    hp = None
+
+
+                        # If after 3 seconds and response has not been received, send a new packet
+                        # Hello Packet if the hello packet response is not received
+                        # Connection Established Packet if connection established packet is not received
+
+                        elif (time.time() - hello_packet_start_time > NOTIFICATION_TIMEOUT) and not receivedHelloPacket:
+                            # print("Rabs kebabs")
+                            ch.write(CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID)))
+                            hello_packet_start_time = time.time()
+                        
+                        elif (time.time() - hello_packet_start_time > NOTIFICATION_TIMEOUT) and not receivedConnPacket:
+                            # print("Rabs kebabs")
                             ch.write(CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID)))
-                            receivedHelloPacket = True
-                        elif not (receivedConnPacket):
-                            # print("SENDING ACK 2")
-                            receivedConnPacket = True
-                        # If connection has already been established, send a statement that the device is connected
-                        # To be shown once only
-                        elif (connectEstablished and (count == 0)):
-                            print(DEVICE[deviceID] + " connected...")
-                            count += 1
-                        
-
-                        if (deviceID == 2):
-                            global bullets
-                            if (bullets != None):
-                                print("THERE ARE ", str(bullets), " bullets")
-                                ch2.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(bullets))))
-                                print("Writing to Gun is successful")
-                                bullets = None
-                        
-                        if (deviceID == 3):
-                            global hp
-                            if (hp != None):
-                                print("You have ", str(hp), " hp left.")
-                                ch3.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(hp))))
-                                print("Writing to Vest is successful")
-                                hp = None
-
-
-                    # If after 3 seconds and response has not been received, send a new packet
-                    # Hello Packet if the hello packet response is not received
-                    # Connection Established Packet if connection established packet is not received
-
-                    elif (time.time() - hello_packet_start_time > NOTIFICATION_TIMEOUT) and not receivedHelloPacket:
-                        # print("Rabs kebabs")
-                        ch.write(CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID)))
-                        hello_packet_start_time = time.time()
-                    
-                    elif (time.time() - hello_packet_start_time > NOTIFICATION_TIMEOUT) and not receivedConnPacket:
-                        # print("Rabs kebabs")
-                        ch.write(CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID)))
-                        hello_packet_start_time = time.time()
-            
-            except Exception as e:
-                # Show the exception and reset the settings
-                print(e)
-                print(DEVICE[deviceID], "disconnected from 'Bluno' function...")
-                bluno.disconnect()
-                receivedHelloPacket = False
-                receivedConnPacket = False
-                if (DEVICE[deviceID] == 'GUN'):
-                    helloPacketReceivedGun1 = False 
-                    connPacketReceivedGun1 = False
-                elif (DEVICE[deviceID] == 'GLOVE'):
-                    helloPacketReceivedGlove1 = False
-                    connPacketReceivedGlove1 = False
-                elif (DEVICE[deviceID] == 'VEST'):
-                    helloPacketReceivedVest1 = False
-                    connPacketReceivedVest1 = False
-                count = 0
-                break
+                            hello_packet_start_time = time.time()
+                
+                except Exception as e:
+                    # Show the exception and reset the settings
+                    # When reconnect, will need to do handshaking again
+                    print(e)
+                    print(DEVICE[deviceID], "disconnected from 'Bluno' function...")
+                    bluno.disconnect()
+                    receivedHelloPacket = False
+                    receivedConnPacket = False
+                    if (DEVICE[deviceID] == 'GUN'):
+                        helloPacketReceivedGun1 = False 
+                        connPacketReceivedGun1 = False
+                    elif (DEVICE[deviceID] == 'GLOVE'):
+                        helloPacketReceivedGlove1 = False
+                        connPacketReceivedGlove1 = False
+                    elif (DEVICE[deviceID] == 'VEST'):
+                        helloPacketReceivedVest1 = False
+                        connPacketReceivedVest1 = False
+                    count = 0
+                    break
+        except Exception as e:
+            print("Connection not successful")   
 
 def connectToBLE(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived):
     try:
@@ -344,8 +353,6 @@ def connectToBLE(deviceMACAddress, deviceID, helloPacketReceived, connPacketRece
         print(DEVICE[deviceID], "unable to connect to 'connectToBLE' function...")
         # Bluno(deviceMACAddress, deviceID)
         
-                
-
 class SensorsDelegate(DefaultDelegate):
     def __init__(self, ch, deviceID, bluno, helloPacketReceived, connPacketReceived):
         DefaultDelegate.__init__(self)
@@ -561,10 +568,10 @@ class SensorsDelegate(DefaultDelegate):
                     connPacketReceivedVest1 = False
 
 # Declare Thread
-t1 = threading.Thread(target=Bluno, args=(PLAYER_1_GLOVE_MAC_ADDRESS, PLAYER_1_GLOVE_DEVICE_ID, False, False))
-t2 = threading.Thread(target=Bluno, args=(PLAYER_1_GUN_MAC_ADDRESS, PLAYER_1_GUN_DEVICE_ID, False, False))
+t1 = threading.Thread(target=Bluno, args=(PLAYER_3_GLOVE_MAC_ADDRESS, PLAYER_1_GLOVE_DEVICE_ID, False, False))
+t2 = threading.Thread(target=Bluno, args=(PLAYER_3_GUN_MAC_ADDRESS, PLAYER_1_GUN_DEVICE_ID, False, False))
 
-t3 = threading.Thread(target=Bluno, args=(PLAYER_1_VEST_MAC_ADDRESS, PLAYER_1_VEST_DEVICE_ID, False, False))
+t3 = threading.Thread(target=Bluno, args=(PLAYER_3_VEST_MAC_ADDRESS, PLAYER_1_VEST_DEVICE_ID, False, False))
 t4 = threading.Thread(target=Bluno, args=(PLAYER_2_VEST_MAC_ADDRESS, PLAYER_1_GUN_DEVICE_ID, False, False))
 
 # Main Function
@@ -579,9 +586,9 @@ if __name__=='__main__':
     
 
 
-    # t1.start()
+    t1.start()
     t2.start()    
-    # t3.start()
+    t3.start()
     # relay.join()
     # relay.start()
     # mqtt_thread.start()
