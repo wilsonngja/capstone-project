@@ -62,7 +62,7 @@ PLAYER_3_GLOVE_MAC_ADDRESS ="D0:39:72:C8:54:8D"
 PLAYER_3_GUN_MAC_ADDRESS = "D0:39:72:C8:56:46"
 PLAYER_3_VEST_MAC_ADDRESS = "D0:39:72:C8:57:2E"
 
-DEVICE = {1: "GLOVE", 2: "GUN", 3: "VESt"}
+DEVICE = {1: "GLOVE", 2: "GUN", 3: "VEST"}
 
 PACKET_FORMAT = "BBHHHHHHHHBB"
 
@@ -190,7 +190,7 @@ class MQTTClient:
                 msg = mqtt_queue.get()
                 if msg['type'] == "UPDATE":
                     if self.sn == 1:
-                        hp = msg['game_state']['p1']['hp']
+                        hp = msg['ga1me_state']['p1']['hp']
                         bullets = msg['game_state']['p1']['bullets']
                         if isinstance(ch2, bluepy.btle.Characteristics):
                             ch2.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, bullets)))
@@ -208,7 +208,7 @@ class MQTTClient:
                     print("hp: " + str(hp) + "bullets: " + str(bullets))
 
 
-def Bluno(deviceMACAddress, deviceID):
+def Bluno(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived):
     helloPacketReceived = False
     connPacketReceived = False
     count = 0
@@ -225,11 +225,12 @@ def Bluno(deviceMACAddress, deviceID):
         global errorCountGun1
         global errorCountVest1
 
-        helloPacketReceived = False
-        connPacketReceived = False
+        # helloPacketReceived = False
+        # connPacketReceived = False
 
         # Connecting to the Bluno
-        bluno, ch = connectToBLE(deviceMACAddress, deviceID)
+        print(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived)
+        bluno, ch, receivedHello, receivedConn = connectToBLE(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived)
         print(DEVICE[deviceID], "connected")
 
         # Start time is used here to determine the duration whether packet drops
@@ -238,24 +239,44 @@ def Bluno(deviceMACAddress, deviceID):
         # Boolean expression for whether Handshaking process is complete
         helloPacketNotReceived = (helloPacketReceived == False)
         connectionNotReceived = (helloPacketReceived == True) and (connPacketReceived == False) 
-        connectEstablished = helloPacketReceived and connPacketReceived
-
+        
+        
         # Initiate Hello Packet to the Bluno and wait for response
         ch.write(CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID)))
+
+        
         while not (helloPacketReceived and connPacketReceived):
             try:
+                
+
+                    
                 while True:
+                    global receivedHelloPacket
+                    global receivedConnPacket
+
+                    if (DEVICE[deviceID] == 'GUN'):
+                        receivedHelloPacket = helloPacketReceivedGun1
+                        receivedConnPacket = connPacketReceivedGun1
+                    elif (DEVICE[deviceID] == 'GLOVE'):
+                        receivedHelloPacket = helloPacketReceivedGlove1
+                        receivedConnPacket = connPacketReceivedGlove1
+                    elif (DEVICE[deviceID] == 'VEST'):
+                        receivedHelloPacket = helloPacketReceivedVest1
+                        receivedConnPacket = connPacketReceivedVest1
+                    connectEstablished = receivedHelloPacket and receivedConnPacket
                     # Wait for Notification with a time out of 3 seconds
                     if bluno.waitForNotifications(NOTIFICATION_TIMEOUT):
-
                         # Check if the hello packet has been received but connection established packet not received
-                        if (connectionNotReceived):
+                        if not (receivedHelloPacket):
                             ch.write(CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID)))
-                        
+                            receivedHelloPacket = True
+                        elif not (receivedConnPacket):
+                            # print("SENDING ACK 2")
+                            receivedConnPacket = True
                         # If connection has already been established, send a statement that the device is connected
                         # To be shown once only
                         elif (connectEstablished and (count == 0)):
-                            print(DEVICE[deviceID] + " connected")
+                            print(DEVICE[deviceID] + " connected...")
                             count += 1
                         
 
@@ -279,12 +300,13 @@ def Bluno(deviceMACAddress, deviceID):
                     # If after 3 seconds and response has not been received, send a new packet
                     # Hello Packet if the hello packet response is not received
                     # Connection Established Packet if connection established packet is not received
-                    elif (time.time() - hello_packet_start_time > NOTIFICATION_TIMEOUT) and helloPacketNotReceived:
+
+                    elif (time.time() - hello_packet_start_time > NOTIFICATION_TIMEOUT) and not receivedHelloPacket:
                         # print("Rabs kebabs")
                         ch.write(CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID)))
                         hello_packet_start_time = time.time()
                     
-                    elif (time.time() - hello_packet_start_time > NOTIFICATION_TIMEOUT) and connectionNotReceived:
+                    elif (time.time() - hello_packet_start_time > NOTIFICATION_TIMEOUT) and not receivedConnPacket:
                         # print("Rabs kebabs")
                         ch.write(CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID)))
                         hello_packet_start_time = time.time()
@@ -294,29 +316,44 @@ def Bluno(deviceMACAddress, deviceID):
                 print(e)
                 print(DEVICE[deviceID], "disconnected from 'Bluno' function...")
                 bluno.disconnect()
+                receivedHelloPacket = False
+                receivedConnPacket = False
+                if (DEVICE[deviceID] == 'GUN'):
+                    helloPacketReceivedGun1 = False 
+                    connPacketReceivedGun1 = False
+                elif (DEVICE[deviceID] == 'GLOVE'):
+                    helloPacketReceivedGlove1 = False
+                    connPacketReceivedGlove1 = False
+                elif (DEVICE[deviceID] == 'VEST'):
+                    helloPacketReceivedVest1 = False
+                    connPacketReceivedVest1 = False
                 count = 0
                 break
 
-def connectToBLE(deviceMACAddress, deviceID):
+def connectToBLE(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived):
     try:
         bluno = Peripheral(deviceMACAddress, "public")
         svc = bluno.getServiceByUUID("dfb0")
         ch = svc.getCharacteristics("dfb1")[0]
-        bluno.setDelegate(SensorsDelegate(ch, deviceID, bluno))
+        sensorDelegate = SensorsDelegate(ch, deviceID, bluno, helloPacketReceived, connPacketReceived)
+        bluno.setDelegate(sensorDelegate)
 
-        return (bluno, ch)
+        
+        return (bluno, ch, sensorDelegate.helloPacketReceived, sensorDelegate.connPacketReceived)
     except Exception as e:
-        print(DEVICE[deviceID], "disconnected from 'connectToBLE' function...")
-        Bluno(deviceMACAddress, deviceID)
+        print(DEVICE[deviceID], "unable to connect to 'connectToBLE' function...")
+        # Bluno(deviceMACAddress, deviceID)
         
                 
 
 class SensorsDelegate(DefaultDelegate):
-    def __init__(self, ch, deviceID, bluno):
+    def __init__(self, ch, deviceID, bluno, helloPacketReceived, connPacketReceived):
         DefaultDelegate.__init__(self)
         self.ch = ch
         self.deviceID = deviceID
         self.bluno = bluno
+        self.helloPacketReceived = helloPacketReceived
+        self.connPacketReceived = connPacketReceived
     
     def handleNotification(self, cHandle, data=0):
         if (cHandle == 37):
@@ -363,8 +400,8 @@ class SensorsDelegate(DefaultDelegate):
                             errorCountGlove1 += 1
                             if (errorCountGlove1 == ERROR_MAX_COUNT):
                                 byte_array_1 = bytearray()
-                                helloPacketReceivedGlove1 = False
-                                connPacketReceivedGlove1 = False
+                                self.helloPacketReceived = False
+                                self.connPacketReceived = False
                                 errorCountGlove1 = 0
                                 self.bluno.disconnect()
                         else:
@@ -393,10 +430,10 @@ class SensorsDelegate(DefaultDelegate):
                                 index = 1
                             
                             if (tuple_data1[1] == HELLO_PACKET_ID):
-                                if (helloPacketReceivedGlove1 == False):
-                                    helloPacketReceivedGlove1 = True
-                                elif (connPacketReceivedGlove1 == False):
-                                    connPacketReceivedGlove1 = True
+                                if (self.helloPacketReceived == False):
+                                    self.helloPacketReceived = True
+                                elif (self.connPacketReceived == False):
+                                    self.connPacketReceived = True
         
                             errorCountGlove1 = 0
                 except Exception as e:
@@ -426,32 +463,39 @@ class SensorsDelegate(DefaultDelegate):
                         if (checksum_value != CHECKSUM_CORRECT_VALUE):
                             # Increment error count. If error count reaches 3, assume that it's
                             # issues caused by fragmentation and reset
-                            errorCountWGun1 += 1
+                            errorCountGun1 += 1
                             if (errorCountGun1 == ERROR_MAX_COUNT):
                                 byteArrayGun1 = bytearray()
                                 errorCountGun1 = 0
-                                helloPacketReceivedGun1 = False
-                                connPacketReceivedGun1 = False
+                                self.helloPacketReceived = False
+                                self.connPacketReceived = False
                                 self.bluno.disconnect()
 
                         else:
                             # Data is correct.
                             tuple_data2 = tuple(tuple_data)
-                            print("GUN: ", tuple_data2)
-                            print(tuple_data2)
+                            print("GUN Receiving: ", tuple_data2)
+                            # print(tuple_data2)
 
                             # If the packet ID is hello Packet, change the state
                             if (tuple_data2[1] == HELLO_PACKET_ID):
                                 # print("RECEIVED HELLO PACKET")
-                                if (helloPacketReceivedGun1 == False):
-                                    helloPacketReceivedGun1 = True
-                                elif (connPacketReceivedGun1 == False):
-                                    connPacketReceivedGun1 = True
+                                if (self.helloPacketReceived == False):
+                                    self.helloPacketReceived = True
+                                    global helloPacketReceivedGun1
+                                    helloPacketReceivedGun1 = self.helloPacketReceived
+
+                                    
+                                elif (self.connPacketReceived == False):
+                                    self.connPacketReceived = True
+                                    global connPacketReceived
+                                    connPacketReceived = self.connPacketReceived
+                                    
 
                             # If it's a data packet, respond with an acknowledgement.
                             # Only Gun and Vest requires acknowledgement
                             elif (tuple_data2[1] == DATA_PACKET_ID):
-                                self.ch.write(CRC8Packet.pack_data(HelloPacket(ACK_PACKET_ID)))
+                                # self.ch.write(CRC8Packet.pack_data(HelloPacket(ACK_PACKET_ID)))
                                 relay_queue.put("SHOTS FIRED")
                             
                             # Reset the count since data received is correct
@@ -459,8 +503,8 @@ class SensorsDelegate(DefaultDelegate):
                 except Exception as e:
                     print(e)
                     print(DEVICE[self.deviceID], "disconnected from Delegate...")
-                    helloPacketReceivedGun1 = False
-                    connPacketReceivedGun1 = False
+                    self.helloPacketReceived = False
+                    self.connPacketReceived = False
                     
             elif (data[0] == PLAYER_1_VEST_DEVICE_ID):
                 try:
@@ -487,8 +531,8 @@ class SensorsDelegate(DefaultDelegate):
                             # Hence requires a reset
                             if (errorCountVest1 == ERROR_MAX_COUNT):
                                 byteArrayVest1 = bytearray()
-                                helloPacketReceivedVest1 = False
-                                connPacketReceivedVest1 = False
+                                self.helloPacketReceived = False
+                                self.connPacketReceived = False
                                 errorCountVest1 = 0
                                 self.bluno.disconnect()
                                 
@@ -499,10 +543,10 @@ class SensorsDelegate(DefaultDelegate):
 
                             # If data received is a hello packet type, change the boolean state of the handshaking process
                             if (tuple_data3[1] == HELLO_PACKET_ID):
-                                if (helloPacketReceivedVest1 == False):
-                                    helloPacketReceivedVest1 = True
-                                elif (connPacketReceivedVest1 == False):
-                                    connPacketReceivedVest1 = True
+                                if (self.helloPacketReceived == False):
+                                    self.helloPacketReceived = True
+                                elif (self.connPacketReceived == False):
+                                    self.connPacketReceived = True
 
                             # If it's a data packet, respond with Acknowledgement
                             elif (tuple_data3[1] == DATA_PACKET_ID):
@@ -517,9 +561,11 @@ class SensorsDelegate(DefaultDelegate):
                     connPacketReceivedVest1 = False
 
 # Declare Thread
-t1 = threading.Thread(target=Bluno, args=(PLAYER_1_GLOVE_MAC_ADDRESS, PLAYER_1_GLOVE_DEVICE_ID))
-t2 = threading.Thread(target=Bluno, args=(PLAYER_1_GUN_MAC_ADDRESS, PLAYER_1_GUN_DEVICE_ID))
-t3 = threading.Thread(target=Bluno, args=(PLAYER_1_VEST_MAC_ADDRESS, PLAYER_1_VEST_DEVICE_ID))
+t1 = threading.Thread(target=Bluno, args=(PLAYER_1_GLOVE_MAC_ADDRESS, PLAYER_1_GLOVE_DEVICE_ID, False, False))
+t2 = threading.Thread(target=Bluno, args=(PLAYER_1_GUN_MAC_ADDRESS, PLAYER_1_GUN_DEVICE_ID, False, False))
+
+t3 = threading.Thread(target=Bluno, args=(PLAYER_1_VEST_MAC_ADDRESS, PLAYER_1_VEST_DEVICE_ID, False, False))
+t4 = threading.Thread(target=Bluno, args=(PLAYER_2_VEST_MAC_ADDRESS, PLAYER_1_GUN_DEVICE_ID, False, False))
 
 # Main Function
 if __name__=='__main__':
@@ -535,8 +581,8 @@ if __name__=='__main__':
 
     # t1.start()
     t2.start()    
-    t3.start()
+    # t3.start()
     # relay.join()
-    relay.start()
-    mqtt_thread.start()
+    # relay.start()
+    # mqtt_thread.start()
 

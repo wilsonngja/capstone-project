@@ -106,8 +106,6 @@ void setup() {
 
 void loop() {
   struct Hello_Packet hello_packet_response;
-
-  ;
   
   // Check for data available
   while (Serial.available()) {
@@ -135,6 +133,7 @@ void loop() {
 
 
         // If previous connected and Arduino is not powered off, then restart manually
+        
         if ((hasReceivedHelloPacket == true) && (hasReceivedConnPacket)) {
           hasReceivedHelloPacket = false;
           hasReceivedConnPacket = false;
@@ -151,9 +150,6 @@ void loop() {
           isReadyToSendData = true; 
         }
       } 
-      else if (incomingData[PACKET_ID_INDEX] == ACK_PACKET_ID) {
-        isReadyToSendData = true;
-      }
 
       // Added in on October 11
       if (incomingData[PACKET_ID_INDEX] == DATA_PACKET_ID) {
@@ -190,10 +186,11 @@ void loop() {
     // LEDControl();
     shotFired = 1;
     struct Data_Packet data_packet;
+  
 
     data_packet = computeDataPacketResponse();
     Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
-    isReadyToSendData = false;
+//    isReadyToSendData = false;
     delay(10);
     
   }

@@ -451,7 +451,7 @@ def connectToBLEGun():
     # Establish connection to Bluno2
     try:
         # print("HELLOHELLO")
-        bluno2 = Peripheral(BLUNO_GUN_PLAYER_1_MAC_ADDRESS, "public")
+        bluno2 = Peripheral(BLUNO_GUN_PLAYER_2_MAC_ADDRESS, "public")
 
         # Establish Delegate to handle notification
         bluno2.setDelegate(SensorsDelegate2())
@@ -489,7 +489,6 @@ def BlunoVest():
 
 
         ch3.write(CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID)))
-        print(struct.unpack("BBHHHHHHHHBB", CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID))))
         while not (helloPacketReceived3 and connPacketReceived3):
             global count3
             try:
@@ -543,7 +542,7 @@ def connectToBLEVest():
     global bluno3
     # Establish connection to Bluno3
     try:
-        bluno3 = Peripheral(BLUNO_VEST_PLAYER_1_MAC_ADDRESS, "public")
+        bluno3 = Peripheral(BLUNO_VEST_PLAYER_2_MAC_ADDRESS, "public")
 
         # Establish Delegate to handle notification
         bluno3.setDelegate(SensorsDelegate3())
@@ -1304,9 +1303,9 @@ if __name__=='__main__':
     # ic.join()
     # relay.join()
 
-    t1.start()
+    # t1.start()
     # t2.start()    
-    # t3.start()
+    t3.start()
     # t4.start()
-    # relay.start()
-    # mqtt_thread.start()
+    relay.start()
+    mqtt_thread.start()
