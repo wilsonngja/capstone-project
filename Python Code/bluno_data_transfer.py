@@ -1304,7 +1304,7 @@ if __name__=='__main__':
     # ic.join()
     # relay.join()
 
-    # t1.start()
+    t1.start()
     t2.start()    
     # t3.start()
     # t4.start()

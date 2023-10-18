@@ -69,24 +69,32 @@ void updateBullet(int bulletsLeft) {
 
 
 void LEDControl() {
+    shotNum++;
     NeoPixel.clear();
-    for(int x = shotNum - 1; x >= 0; x--) { // neopixel
-      NeoPixel.setPixelColor(x, NeoPixel.Color(24, 0, 0));
+    for (int i = 0; i < 6 - shotNum; i += 1) {
+      NeoPixel.setPixelColor(i, NeoPixel.Color(24, 0, 0));
     }
-    NeoPixel.show(); 
-    digitalWrite(ledPin, HIGH); // led
+    NeoPixel.show();
+    digitalWrite(ledPin, HIGH);
     delay(10);
     digitalWrite(ledPin, LOW);
+    // NeoPixel.clear();
+    // for(int x = shotNum - 1; x >= 0; x--) { // neopixel
+    //  NeoPixel.setPixelColor(x, NeoPixel.Color(24, 0, 0));
+    // }
+    // NeoPixel.show(); 
+    // digitalWrite(ledPin, HIGH); // led
+    // delay(10);
+    // digitalWrite(ledPin, LOW);
 
-    if(shotNum == 1 || reload == 1) {
+    // if(shotNum == 1 || reload == 1) {
       
-      NeoPixel.clear();
-      delay(200);
-      NeoPixel.show(); 
-      //shotNum = -1;
-      //reload = 0;
+      // NeoPixel.clear();
+      // delay(200);
+      // NeoPixel.show(); 
+      // //shotNum = -1;
+      // //reload = 0;
     }
-}
 
 void setup() {
   Serial.begin(115200);
@@ -183,7 +191,7 @@ void loop() {
   if(lastButtonState == LOW && currentButtonState == HIGH) { // button pressed
     activatePulse = 1;
     triggerTime = millis();
-    // LEDControl();
+     LEDControl();
     shotFired = 1;
     struct Data_Packet data_packet;
   
