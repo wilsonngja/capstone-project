@@ -167,10 +167,9 @@ class RelayClient:
         print("connected")
 
         while True:
-            if not relay_queue.empty():
-                msg = relay_queue.get()
-                await self.send_message(msg)
-                print("sent:" + msg)
+            msg = relay_queue.get()
+            await self.send_message(msg)
+            print("sent:" + msg)
 
     def run(self):
         try:
@@ -220,22 +219,22 @@ class MQTTClient:
             global bullets
             global hp
 
-            if not mqtt_queue.empty():
-                msg = mqtt_queue.get()
-                if msg['type'] == "UPDATE":
-                    if self.sn == 1:
-                        hp = msg['game_state']['p1']['hp']
-                        bullets = msg['game_state']['p1']['bullets']
+            
+            msg = mqtt_queue.get()
+            if msg['type'] == "UPDATE":
+                if self.sn == 1:
+                    hp = msg['game_state']['p1']['hp']
+                    bullets = msg['game_state']['p1']['bullets']
+                    
+                    try:
+                        # print(type(hp), type(bullets))
+                        print("hp: " + str(hp) + "bullets: " + str(bullets))
                         
-                        try:
-                            # print(type(hp), type(bullets))
-                            print("hp: " + str(hp) + "bullets: " + str(bullets))
-                            
-                        except Exception as e:
-                            print(e)
-                    else:
-                        hp = msg['game_state']['p2']['hp']
-                        bullets = msg['game_state']['p2']['bullets']
+                    except Exception as e:
+                        print(e)
+                else:
+                    hp = msg['game_state']['p2']['hp']
+                    bullets = msg['game_state']['p2']['bullets']
                         
                     
                         
@@ -451,7 +450,7 @@ def connectToBLEGun():
     # Establish connection to Bluno2
     try:
         # print("HELLOHELLO")
-        bluno2 = Peripheral(BLUNO_GUN_PLAYER_2_MAC_ADDRESS, "public")
+        bluno2 = Peripheral(BLUNO_GUN_PLAYER_1_MAC_ADDRESS, "public")
 
         # Establish Delegate to handle notification
         bluno2.setDelegate(SensorsDelegate2())
@@ -489,6 +488,7 @@ def BlunoVest():
 
 
         ch3.write(CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID)))
+        print(struct.unpack("BBHHHHHHHHBB", CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID))))
         while not (helloPacketReceived3 and connPacketReceived3):
             global count3
             try:
@@ -525,6 +525,7 @@ def BlunoVest():
             
             except Exception as e:
                 bluno.disconnect()
+                print("VEST DISCONNECTED")
                 Ir_Sensor= YELLOW + "Disconnected" + END
                 helloPacketReceived3 = False
                 connPacketReceived3 = False

@@ -34,9 +34,9 @@ int pulsedelay;
 //  HP -= 10;
 //}
 
-void playerShot() {
-  /*
-  livesNum--;
+void playerShot(int livesNum) {
+  
+  // livesNum--;
   NeoPixel.clear();
   for(int x = 0; x < livesNum; x++) { // neopixel
       if (player ==  1) {
@@ -54,7 +54,7 @@ void playerShot() {
     delay(500);
     livesNum = 10;
   }
-  */
+  
 }
 
 
@@ -102,7 +102,7 @@ void loop() {
 
  
 
-
+  
   if (index == 20) {
     index = 0;
 
@@ -125,18 +125,22 @@ void loop() {
         }
 
         // Make sure the 2 handshake start
-        
+
+         // Serial.println(String(hasReceivedHelloPacket) + " " + String(hasReceivedConnPacket));
         if (hasReceivedHelloPacket == false) {
           Serial.write((uint8_t*) &hello_packet_response, sizeof(hello_packet_response));  
           hasReceivedHelloPacket = true;  
+          
         } else if (hasReceivedConnPacket == false) {
           Serial.write((uint8_t*) &hello_packet_response, sizeof(hello_packet_response));  
           hasReceivedConnPacket = true;
           isReadyToSendData = true; 
+          
         }
-      } else if (incomingData[PACKET_ID_INDEX] == ACK_PACKET_ID) {
-        isReadyToSendData = true;
-      }
+      } 
+//      else if (incomingData[PACKET_ID_INDEX] == ACK_PACKET_ID) {
+//        isReadyToSendData = true;
+//      }
 
       // Added in on October 11
       else if (incomingData[PACKET_ID_INDEX] == DATA_PACKET_ID) {
@@ -153,12 +157,13 @@ void loop() {
       }
     }
   }
-
+  
+  
   // The part on sending data
   if (isReadyToSendData) {
-    
     if(millis()>=pulsebuffer+pulsedelay)
     {
+      
       pulsebuffer = millis();
       //Serial.println(pulsebuffer);
       if(receiverstate!=digitalRead(RECV_PIN))
@@ -168,14 +173,16 @@ void loop() {
         pulsecheck++;
         if(pulsecheck== numOfChecks)
         {
+          
           struct Data_Packet data_packet;
           data_packet = computeDataPacketResponse(1);
           Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
 //          isReadyToSendData = f/alse;
           
           hitbywhichplayer = 1; // internal comms
-          playerShot();
-          //health();
+          livesNum--;
+          playerShot(livesNum);
+          // health();
           receivetime=millis();
           //Serial.println("PulseConfirmed");
         }

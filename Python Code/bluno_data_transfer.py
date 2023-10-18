@@ -167,10 +167,9 @@ class RelayClient:
         print("connected")
 
         while True:
-            if not relay_queue.empty():
-                msg = relay_queue.get()
-                await self.send_message(msg)
-                print("sent:" + msg)
+            msg = relay_queue.get()
+            await self.send_message(msg)
+            print("sent:" + msg)
 
     def run(self):
         try:
@@ -220,22 +219,22 @@ class MQTTClient:
             global bullets
             global hp
 
-            if not mqtt_queue.empty():
-                msg = mqtt_queue.get()
-                if msg['type'] == "UPDATE":
-                    if self.sn == 1:
-                        hp = msg['game_state']['p1']['hp']
-                        bullets = msg['game_state']['p1']['bullets']
+            
+            msg = mqtt_queue.get()
+            if msg['type'] == "UPDATE":
+                if self.sn == 1:
+                    hp = msg['game_state']['p1']['hp']
+                    bullets = msg['game_state']['p1']['bullets']
+                    
+                    try:
+                        # print(type(hp), type(bullets))
+                        print("hp: " + str(hp) + "bullets: " + str(bullets))
                         
-                        try:
-                            # print(type(hp), type(bullets))
-                            print("hp: " + str(hp) + "bullets: " + str(bullets))
-                            
-                        except Exception as e:
-                            print(e)
-                    else:
-                        hp = msg['game_state']['p2']['hp']
-                        bullets = msg['game_state']['p2']['bullets']
+                    except Exception as e:
+                        print(e)
+                else:
+                    hp = msg['game_state']['p2']['hp']
+                    bullets = msg['game_state']['p2']['bullets']
                         
                     
                         
@@ -526,6 +525,7 @@ def BlunoVest():
             
             except Exception as e:
                 bluno.disconnect()
+                print("VEST DISCONNECTED")
                 Ir_Sensor= YELLOW + "Disconnected" + END
                 helloPacketReceived3 = False
                 connPacketReceived3 = False
@@ -543,7 +543,7 @@ def connectToBLEVest():
     global bluno3
     # Establish connection to Bluno3
     try:
-        bluno3 = Peripheral(BLUNO_VEST_PLAYER_1_MAC_ADDRESS, "public")
+        bluno3 = Peripheral(BLUNO_VEST_PLAYER_2_MAC_ADDRESS, "public")
 
         # Establish Delegate to handle notification
         bluno3.setDelegate(SensorsDelegate3())
@@ -1304,9 +1304,9 @@ if __name__=='__main__':
     # ic.join()
     # relay.join()
 
-    t1.start()
-    # t2.start()    
+    # t1.start()
+    t2.start()    
     # t3.start()
     # t4.start()
-    # relay.start()
-    # mqtt_thread.start()
+    relay.start()
+    mqtt_thread.start()
