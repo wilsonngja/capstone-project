@@ -47,3 +47,4 @@ class DataPacket:
         self.padding_7 = 0
         self.padding_8 = 0
         self.checksum = 0
+

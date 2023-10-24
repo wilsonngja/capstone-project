@@ -65,8 +65,8 @@ BLUNO_VEST_PLAYER_2_MAC_ADDRESS = "D0:39:72:E4:91:AC"
 BLUNO_GLOVE_PLAYER_1_MAC_ADDRESS = "D0:39:72:E4:93:9D"
 BLUNO_GLOVE_PLAYER_2_MAC_ADDRESS = "D0:39:72:E4:93:BC"
 BLUNO_GUN_PLAYER_1_MAC_ADDRESS = "D0:39:72:E4:80:A8"
-# BLUNO_GUN_PLAYER_2_MAC_ADDRESS = "D0:39:72:E4:8C:05"
-BLUNO_GUN_PLAYER_2_MAC_ADDRESS = "D0:39:72:C8:56:46"
+BLUNO_GUN_PLAYER_2_MAC_ADDRESS = "D0:39:72:E4:8C:05"
+# BLUNO_GUN_PLAYER_2_MAC_ADDRESS = "D0:39:72:C8:56:46"
 
 
 
@@ -341,7 +341,7 @@ def connectToBLEGlove():
     global bluno1
 
     try:
-        bluno1 = Peripheral(BLUNO_GLOVE_PLAYER_1_MAC_ADDRESS, "public")
+        bluno1 = Peripheral(BLUNO_GLOVE_PLAYER_2_MAC_ADDRESS, "public")
         bluno1.setDelegate(SensorsDelegate1())
 
         print("GLOVE CONNECTED")
@@ -450,7 +450,7 @@ def connectToBLEGun():
     # Establish connection to Bluno2
     try:
         # print("HELLOHELLO")
-        bluno2 = Peripheral(BLUNO_GUN_PLAYER_1_MAC_ADDRESS, "public")
+        bluno2 = Peripheral(BLUNO_GUN_PLAYER_2_MAC_ADDRESS, "public")
 
         # Establish Delegate to handle notification
         bluno2.setDelegate(SensorsDelegate2())
@@ -1304,8 +1304,8 @@ if __name__=='__main__':
     # ic.join()
     # relay.join()
 
-    # t1.start()
-    # t2.start()    
+    t1.start()
+    t2.start()    
     t3.start()
     # t4.start()
     relay.start()

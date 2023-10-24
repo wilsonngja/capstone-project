@@ -4,8 +4,8 @@
 #include "Bluno_Variables_3.h"
 
 // VEST
-#define player 1 // Orange (50)
-//#define player 2 // BLUE (20)
+//#define player 1 // Orange (50)
+#define player 2 // BLUE (20)
 
 #include <Adafruit_NeoPixel.h>
 #define neoPixelPin A2
@@ -138,14 +138,11 @@ void loop() {
           
         }
       } 
-//      else if (incomingData[PACKET_ID_INDEX] == ACK_PACKET_ID) {
-//        isReadyToSendData = true;
-//      }
+
 
       // Added in on October 11
       else if (incomingData[PACKET_ID_INDEX] == DATA_PACKET_ID) {
         livesNum = incomingData[2] / 10;
-//        Serial.println(livesNum);/
         for(int x = 0; x < livesNum; x++) { // neopixel
           if (player ==  1) {
             NeoPixel.setPixelColor(x, NeoPixel.Color(242, 133, 0)); // orange

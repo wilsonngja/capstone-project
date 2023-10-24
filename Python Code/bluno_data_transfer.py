@@ -543,7 +543,7 @@ def connectToBLEVest():
     global bluno3
     # Establish connection to Bluno3
     try:
-        bluno3 = Peripheral(BLUNO_VEST_PLAYER_2_MAC_ADDRESS, "public")
+        bluno3 = Peripheral(BLUNO_VEST_PLAYER_1_MAC_ADDRESS, "public")
 
         # Establish Delegate to handle notification
         bluno3.setDelegate(SensorsDelegate3())
@@ -1306,7 +1306,7 @@ if __name__=='__main__':
 
     t1.start()
     t2.start()    
-    # t3.start()
+    t3.start()
     # t4.start()
     relay.start()
     mqtt_thread.start()

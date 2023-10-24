@@ -115,3 +115,36 @@ def pack_ack_data(Packet):
                     Packet.padding_9,
                     Packet.checksum)
 
+
+def pack_data_result(DataPacket):
+    crc = crc8.crc8()
+    crc.reset()
+    
+    DataPacketWOChecksum = struct.pack(PacketWOChecksumFormat,
+                                DataPacket.device_id,
+                                DataPacket.packet_id,
+                                DataPacket.data,
+                                DataPacket.padding_1,
+                                DataPacket.padding_2,
+                                DataPacket.padding_3,
+                                DataPacket.padding_4,
+                                DataPacket.padding_5,
+                                DataPacket.padding_6,
+                                DataPacket.padding_7,
+                                DataPacket.padding_8)
+    
+    DataPacket.checksum = calculate_crc8(DataPacketWOChecksum)
+    
+    return struct.pack(PacketFormat, 
+                    DataPacket.device_id,
+                    DataPacket.packet_id,
+                    DataPacket.data,
+                    DataPacket.padding_1,
+                    DataPacket.padding_2,
+                    DataPacket.padding_3,
+                    DataPacket.padding_4,
+                    DataPacket.padding_5,
+                    DataPacket.padding_6,
+                    DataPacket.padding_7,
+                    DataPacket.padding_8,
+                    DataPacket.checksum)

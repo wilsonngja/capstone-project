@@ -1,6 +1,6 @@
 # Import Libraries
-from bluepy.btle import Peripheral, UUID, DefaultDelegate, BTLEDisconnectError
-from PacketStructClass import HelloPacket, AckPacket
+from bluepy.btle import Peripheral, UUID, DefaultDelegate, BTLEDisconnectError, Characteristic
+from PacketStructClass import HelloPacket, AckPacket, DataPacket
 
 import threading
 import sys
@@ -43,9 +43,9 @@ YELLOW = "\033[93m"
 END = '\033[0m'
 
 # Characteristic Objects (SEEMS LIKE IT'S NOT NEEDED BUT COMMENTED OUT TO CHECK)
-# chGlove1 = None
-# chGun1 = None
-# chVest1 = None
+chGlove1 = None
+chGun1 = None
+chVest1 = None
 
 # Player 1 MAC Addresses
 PLAYER_1_GLOVE_MAC_ADDRESS = "D0:39:72:E4:93:9D"
@@ -136,7 +136,6 @@ class RelayClient:
         print("connected")
 
         while True:
-            if not relay_queue.empty():
                 msg = relay_queue.get()
                 await self.send_message(msg)
                 print("sent:" + msg)
@@ -193,17 +192,19 @@ class MQTTClient:
                 if self.sn == 1:
                     hp = msg['game_state']['p1']['hp']
                     bullets = msg['game_state']['p1']['bullets']
-                    if isinstance(chGun1, bluepy.btle.Characteristics):
-                        chGun1.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, bullets)))
-                    if isinstance(chVest1, bluepy.btle.Characteristics):
-                        chVest1.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, hp)))
+                    # if isinstance(chGun1, Characteristic):
+                    #     chGun1.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, bullets)))
+                    #     print("Writing to Gun is successful")
+                    # if isinstance(chVest1, Characteristic):
+                    #     chVest1.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, hp)))
                 else:
                     hp = msg['game_state']['p2']['hp']
                     bullets = msg['game_state']['p2']['bullets']
-                    if isinstance(chGun1, bluepy.btle.Characteristics):
-                        chGun1.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, bullets)))
-                    if isinstance(chVest1, bluepy.btle.Characteristics):
-                        chVest1.write(CRC8Packet.pack_data(DataPkt(DATA_PACKET_ID, hp)))
+                    # if isinstance(chGun1, Characteristic):
+                    #     chGun1.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, bullets)))
+                    #     print("Writing to Gun is successful")
+                    # if isinstance(chVest1, Characteristic):
+                    #     chVest1.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, hp)))
                     
             
                 print("hp: " + str(hp) + "bullets: " + str(bullets))
@@ -237,7 +238,7 @@ def Bluno(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived):
         # print(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived)
         try:
             bluno, ch = connectToBLE(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived)
-
+            
             if (DEVICE[deviceID] == "VEST"):
                 
                 chVest1 = ch
@@ -246,8 +247,8 @@ def Bluno(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived):
                 
                 chGlove1 = ch
             
-            elif (DEVICE[deviceID] == "GUN'"):
-                
+            elif (DEVICE[deviceID] == "GUN"):
+                # print("THIS IS A GUN")
                 chGun1 = ch
             
             print(DEVICE[deviceID], "connected")
@@ -284,6 +285,23 @@ def Bluno(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived):
 
                         connectEstablished = helloPacketReceived and connPacketReceived
                         # Wait for Notification with a time out of 3 seconds
+                        if (DEVICE[deviceID] == "GUN"):
+                            global bullets
+                            print("INSIDE GUN LOOP")
+                            if (bullets != None):
+                                print("THERE ARE ", str(bullets), " bullets")
+                                ch.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(bullets))))
+                                print("GUN WRITE SUCCESS")
+                                bullets = None
+                        
+                        if (deviceID == 3):
+                            global hp
+                            if (hp != None):
+                                print("You have ", str(hp), " hp left.")
+                                ch.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(hp))))
+                                
+                                hp = None
+
                         if bluno.waitForNotifications(NOTIFICATION_TIMEOUT):
                             # Check if the hello packet has been received but connection established packet not received
                             if not (helloPacketReceived):
@@ -301,21 +319,7 @@ def Bluno(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived):
                             #     count += 1
                             
 
-                            if (deviceID == 2):
-                                global bullets
-                                if (bullets != None):
-                                    print("THERE ARE ", str(bullets), " bullets")
-                                    chGun1.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(bullets))))
-                                    print("Writing to Gun is successful")
-                                    bullets = None
-                            
-                            if (deviceID == 3):
-                                global hp
-                                if (hp != None):
-                                    print("You have ", str(hp), " hp left.")
-                                    chVest1.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(hp))))
-                                    print("Writing to Vest is successful")
-                                    hp = None
+                        
 
 
                         # If after 3 seconds and response has not been received, send a new packet
@@ -597,6 +601,6 @@ if __name__=='__main__':
     t2.start()    
     # t3.start()
     # relay.join()
-    relay.start()
-    mqtt_thread.start()
+    # relay.start()
+    # mqtt_thread.start()
 

@@ -32,7 +32,8 @@ bool pulseState = 0;
 
 int i = 0;
 
-int pulseDelay = 50;
+//int pulseDelay = 50; // Player 1
+int pulseDelay = 20; // Player 2
 int shootTime = 800;
 
 bool shotFired = 0;
@@ -59,7 +60,7 @@ void setIrModOutput() {
 void updateBullet(int bulletsLeft) {
     NeoPixel.clear();
     for (int i = 0; i < 6 - bulletsLeft; i += 1) {
-      NeoPixel.setPixelColor(i, NeoPixel.Color(24, 0, 0));
+      NeoPixel.setPixelColor(i, NeoPixel.Color(25, 21, 0));
     }
     NeoPixel.show();  
     digitalWrite(ledPin, HIGH); // led
@@ -72,7 +73,7 @@ void LEDControl() {
     shotNum++;
     NeoPixel.clear();
     for (int i = 0; i < 6 - shotNum; i += 1) {
-      NeoPixel.setPixelColor(i, NeoPixel.Color(24, 0, 0));
+      NeoPixel.setPixelColor(i, NeoPixel.Color(25, 21, 0));
     }
     NeoPixel.show();
     digitalWrite(ledPin, HIGH);
@@ -107,7 +108,7 @@ void setup() {
   TIMSK2 = _BV(OCIE2B);
   NeoPixel.clear();
   for(int x = 5; x >= 0; x--) { // neopixel
-      NeoPixel.setPixelColor(x, NeoPixel.Color(24, 0, 0));
+      NeoPixel.setPixelColor(x, NeoPixel.Color(25, 21, 0));
     }
     NeoPixel.show(); 
 }
@@ -161,7 +162,7 @@ void loop() {
 
       // Added in on October 11
       if (incomingData[PACKET_ID_INDEX] == DATA_PACKET_ID) {
-        int shotNum = 6 - incomingData[2];
+        shotNum = 6 - incomingData[2];
         
 //        Serial.println(incomingData[2]);
         
