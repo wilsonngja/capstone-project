@@ -4,8 +4,8 @@
 #include "Bluno_Variables_3.h"
 
 // VEST
-//#define player 1 // Orange (50)
-#define player 2 // BLUE (20)
+#define player 1 // Orange (50)
+//#define player 2 // BLUE (20)
 
 #include <Adafruit_NeoPixel.h>
 #define neoPixelPin A2
@@ -22,6 +22,7 @@ unsigned long receivetime = 0;
 unsigned long pulsebuffer = 0;
 
 int numOfChecks;
+int errorCount = 0;
 
 int lightuptime = 800;
 int hitbywhichplayer = 0; // to send to internal comms
@@ -71,6 +72,15 @@ void setup() {
       pulsedelay = 20;   // align with player 1 gun
       numOfChecks = 5;
   }
+
+  for(int x = 0; x < livesNum; x++) { // neopixel
+    if (player ==  1) {
+      NeoPixel.setPixelColor(x, NeoPixel.Color(242, 133, 0)); // orange
+    } else if (player == 2) {
+        NeoPixel.setPixelColor(x, NeoPixel.Color(0, 0, 255)); // blue
+    }
+  }
+  NeoPixel.show();
   
 }
 ///
@@ -78,20 +88,10 @@ void setup() {
 void loop() {
   struct Hello_Packet hello_packet_response;
 
-  NeoPixel.clear();
-  if(livesNum == numPixels) {
-     for(int x = 0; x < livesNum; x++) { // neopixel
-        if (player ==  1) {
-        NeoPixel.setPixelColor(x, NeoPixel.Color(242, 133, 0)); // orange
-      } else if (player == 2) {
-        NeoPixel.setPixelColor(x, NeoPixel.Color(0, 0, 255)); // blue
-      }
-    }
-    NeoPixel.show(); 
-  }
+  
   
   // Check for data available
-  while (Serial.available()) {
+  if (Serial.available()) {
     if (index != 20) {
       
       byte data = Serial.read();
@@ -105,10 +105,20 @@ void loop() {
   
   if (index == 20) {
     index = 0;
-
+    // Serial.write((uint8_t*) &hello_packet_response, sizeof(hello_packet_response));
     if (calculateCRC8(incomingData, 20) == 0){
       if (incomingData[PACKET_ID_INDEX] == DATA_PACKET_ID) {
+        //Serial.println("ENTERED FIRST DATA PACKET CHECK");
         livesNum = incomingData[2] / 10;
+        NeoPixel.clear();
+        for(int x = 0; x < livesNum; x++) { // neopixel
+          if (player ==  1) {
+            NeoPixel.setPixelColor(x, NeoPixel.Color(242, 133, 0)); // orange
+          } else if (player == 2) {
+            NeoPixel.setPixelColor(x, NeoPixel.Color(0, 0, 255)); // blue
+          }
+        }
+        NeoPixel.show(); 
       }
       
       // Sending Hello Packet
@@ -119,14 +129,16 @@ void loop() {
 
         // If previous connected and Arduino is not powered off, then restart manually
         if ((hasReceivedHelloPacket == true) && (hasReceivedConnPacket)) {
+//          Serial.println("CHANGE BACK TO FALSE");
           hasReceivedHelloPacket = false;
           hasReceivedConnPacket = false;
           isReadyToSendData = false;
         }
 
+        
         // Make sure the 2 handshake start
 
-         // Serial.println(String(hasReceivedHelloPacket) + " " + String(hasReceivedConnPacket));
+         
         if (hasReceivedHelloPacket == false) {
           Serial.write((uint8_t*) &hello_packet_response, sizeof(hello_packet_response));  
           hasReceivedHelloPacket = true;  
@@ -141,23 +153,25 @@ void loop() {
 
 
       // Added in on October 11
-      else if (incomingData[PACKET_ID_INDEX] == DATA_PACKET_ID) {
-        livesNum = incomingData[2] / 10;
-        for(int x = 0; x < livesNum; x++) { // neopixel
-          if (player ==  1) {
-            NeoPixel.setPixelColor(x, NeoPixel.Color(242, 133, 0)); // orange
-          } else if (player == 2) {
-            NeoPixel.setPixelColor(x, NeoPixel.Color(0, 0, 255)); // blue
-          }
-        }
-        NeoPixel.show(); 
-      }
-    }
+//      else if (incomingData[PACKET_ID_INDEX] == DATA_PACKET_ID) {
+//        //Serial.println("RECEIVED PACKET");
+//        livesNum = incomingData[2] / 10;
+//        for(int x = 0; x < livesNum; x++) { // neopixel
+//          if (player ==  1) {
+//            NeoPixel.setPixelColor(x, NeoPixel.Color(242, 133, 0)); // orange
+//          } else if (player == 2) {
+//            NeoPixel.setPixelColor(x, NeoPixel.Color(0, 0, 255)); // blue
+//          }
+//        }
+//        NeoPixel.show(); 
+//      }
+    } 
   }
   
   
   // The part on sending data
   if (isReadyToSendData) {
+//    Serial.println("HANDSHAKE DONE");
     if(millis()>=pulsebuffer+pulsedelay)
     {
       
@@ -182,6 +196,7 @@ void loop() {
           // health();
           receivetime=millis();
           //Serial.println("PulseConfirmed");
+          
         }
       }
       else
@@ -208,6 +223,7 @@ void loop() {
     //Serial.write((uint8_t*) &data_packet, sizeof(data_packet));
     //isReadyToSendData = false;
   }
+  
   delay(7);
   
   

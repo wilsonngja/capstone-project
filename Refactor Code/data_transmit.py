@@ -285,7 +285,7 @@ def Bluno(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived):
 
                         connectEstablished = helloPacketReceived and connPacketReceived
                         # Wait for Notification with a time out of 3 seconds
-                        if (DEVICE[deviceID] == "GUN"):
+                        if ():
                             global bullets
                             print("INSIDE GUN LOOP")
                             if (bullets != None):
@@ -294,7 +294,7 @@ def Bluno(deviceMACAddress, deviceID, helloPacketReceived, connPacketReceived):
                                 print("GUN WRITE SUCCESS")
                                 bullets = None
                         
-                        if (deviceID == 3):
+                        if (DEVICE[deviceID] == "VEST"):
                             global hp
                             if (hp != None):
                                 print("You have ", str(hp), " hp left.")
@@ -580,9 +580,9 @@ class SensorsDelegate(DefaultDelegate):
 
 # Declare Thread
 t1 = threading.Thread(target=Bluno, args=(PLAYER_1_GLOVE_MAC_ADDRESS, PLAYER_1_GLOVE_DEVICE_ID, False, False))
-t2 = threading.Thread(target=Bluno, args=(PLAYER_1_GUN_MAC_ADDRESS, PLAYER_1_GUN_DEVICE_ID, False, False))
+t2 = threading.Thread(target=Bluno, args=(PLAYER_2_GUN_MAC_ADDRESS, PLAYER_1_GUN_DEVICE_ID, False, False))
 
-t3 = threading.Thread(target=Bluno, args=(PLAYER_1_VEST_MAC_ADDRESS, PLAYER_1_VEST_DEVICE_ID, False, False))
+t3 = threading.Thread(target=Bluno, args=(PLAYER_2_VEST_MAC_ADDRESS, PLAYER_1_VEST_DEVICE_ID, False, False))
 t4 = threading.Thread(target=Bluno, args=(PLAYER_2_VEST_MAC_ADDRESS, PLAYER_1_GUN_DEVICE_ID, False, False))
 
 # Main Function
@@ -597,10 +597,10 @@ if __name__=='__main__':
     
 
 
-    # t1.start()
-    t2.start()    
+    t1.start()
+    # t2.start()    
     # t3.start()
     # relay.join()
-    # relay.start()
-    # mqtt_thread.start()
+    relay.start()
+    mqtt_thread.start()
 
