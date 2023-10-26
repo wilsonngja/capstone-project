@@ -5,7 +5,7 @@
 
 // VEST
 #define player 1 // Orange (50)
-//#define player 2 // BLUE (20)
+// #define player 2 // BLUE (20)
 
 #include <Adafruit_NeoPixel.h>
 #define neoPixelPin A2
@@ -110,15 +110,18 @@ void loop() {
       if (incomingData[PACKET_ID_INDEX] == DATA_PACKET_ID) {
         //Serial.println("ENTERED FIRST DATA PACKET CHECK");
         livesNum = incomingData[2] / 10;
-        NeoPixel.clear();
-        for(int x = 0; x < livesNum; x++) { // neopixel
+         NeoPixel.clear();
+         for(int x = 0; x < livesNum; x++) { // neopixel
           if (player ==  1) {
             NeoPixel.setPixelColor(x, NeoPixel.Color(242, 133, 0)); // orange
           } else if (player == 2) {
             NeoPixel.setPixelColor(x, NeoPixel.Color(0, 0, 255)); // blue
           }
-        }
-        NeoPixel.show(); 
+         }
+         NeoPixel.show(); 
+
+        // ACK FOR DATA RECEIVED
+        Serial.write((uint8_t*) &hello_packet_response, sizeof(hello_packet_response));
       }
       
       // Sending Hello Packet
@@ -138,6 +141,7 @@ void loop() {
         
         // Make sure the 2 handshake start
 
+//
          
         if (hasReceivedHelloPacket == false) {
           Serial.write((uint8_t*) &hello_packet_response, sizeof(hello_packet_response));  

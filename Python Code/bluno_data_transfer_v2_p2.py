@@ -159,6 +159,7 @@ class BlunoGlove:
         self.svc = None
         self.peripheral = None
         self.ch = None
+        
 
 
     def connectToBLEGlove(self):
@@ -294,6 +295,8 @@ class BlunoGun:
         self.svc = None
         self.peripheral = None
         self.ch = None
+        self.commsToBlunoSent = True
+        self.commsToBlunoData = None
 
 
     # Function to connect to Bluno 2 and send data
@@ -301,12 +304,14 @@ class BlunoGun:
         while True:
             self.connectToBLEGun()
             # hello_packet_start_time = perf_counter()
+            
 
             self.ch.write(CRC8Packet.pack_data(HelloPacket(HELLO_PACKET_ID)))
             while not (self.helloPacketReceived and self.connPacketReceived):
                 try:
                     while True:
                         hello_packet_start_time = perf_counter()
+                        comms_to_bluno_start_time = perf_counter()
 
                         if self.peripheral.waitForNotifications(TIMEOUT): # calls handleNotification()
 
@@ -325,9 +330,20 @@ class BlunoGun:
                             self.ch.write(CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID)))
                             hello_packet_start_time = perf_counter()
                     
+                        # For Internal Back to Bluno
+                        elif (self.helloPacketReceived and self.connPacketReceived and not self.commsToBlunoSent and (perf_counter() - comms_to_bluno_start_time > TIMEOUT)):
+                            
+                            self.ch.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, self.commsToBlunoData)))
+                            print("Re-writing to gun is successful")
+                            comms_to_bluno_start_time = perf_counter()
+
+
                         if not gun_queue.empty():
-                            self.ch.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(gun_queue.get()))))
+                            self.commsToBlunoData = int(gun_queue.get())
+                            self.ch.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, self.commsToBlunoData)))
                             print("Writing to gun is successful")
+                            self.commsToBlunoSent = False
+                            comms_to_bluno_start_time = perf_counter()
 
                 except Exception as e:
                     self.peripheral.disconnect()
@@ -337,6 +353,8 @@ class BlunoGun:
                     self.helloPacketReceived = False
                     self.connPacketReceived = False
                     self.connected = False
+                    hello_packet_start_time = perf_counter()
+                    comms_to_bluno_start_time = perf_counter()
                     break
 
 
@@ -402,6 +420,9 @@ class BlunoGun:
                                 self.parent.helloPacketReceived = True
                             elif (self.parent.connPacketReceived == False):
                                 self.parent.connPacketReceived = True
+                            elif (self.parent.helloPacketReceived and self.parent.connPacketReceived):
+                                self.parent.commsToBlunoSent = True
+                                
                         elif (tuple_data2[1] == 4):
                             self.parent.ch.write(CRC8Packet.pack_data(HelloPacket(ACK_PACKET_ID)))
                             relay_queue.put("SHOTS FIRED")
@@ -419,6 +440,8 @@ class BlunoVest:
         self.svc = None
         self.peripheral = None
         self.ch = None
+        self.commsToBlunoSent = True
+        self.commsToBlunoData = None
 
 
     def run(self):
@@ -432,6 +455,7 @@ class BlunoVest:
                 try:
                     while True:
                         hello_packet_start_time = perf_counter()
+                        comms_to_bluno_start_time = perf_counter()
                         
                         if self.peripheral.waitForNotifications(TIMEOUT): # calls handleNotification()
                             
@@ -451,19 +475,32 @@ class BlunoVest:
                             self.ch.write(CRC8Packet.pack_data(HelloPacket(CONN_EST_PACKET_ID)))
                             print("Vest Conn Packet Sent again")
                             hello_packet_start_time = perf_counter()
+                        
+                        # For Internal Back to Bluno
+                        elif (self.helloPacketReceived and self.connPacketReceived and not self.commsToBlunoSent and (perf_counter() - comms_to_bluno_start_time > TIMEOUT)):
+                            
+                            self.ch.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, self.commsToBlunoData)))
+                            print("Re-writing to vest is successful")
+                            comms_to_bluno_start_time = perf_counter()
+
 
                         if not vest_queue.empty():
-                            self.ch.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, int(vest_queue.get()))))
+                            self.commsToBlunoData = int(vest_queue.get())
+                            self.ch.write(CRC8Packet.pack_data_result(DataPacket(DATA_PACKET_ID, self.commsToBlunoData)))
                             print("Writing to vest is successful")
+                            self.commsToBlunoSent = False
+                            comms_to_bluno_start_time = perf_counter()
                 
                 except Exception as e:
                     self.peripheral.disconnect()
+                    print(e)
                     print("VEST DISCONNECTED...")
                     self.helloPacketReceived = False
                     self.connPacketReceived = False
                     self.connected = False
-                    # self.error_count = 0
-                    # hello_packet_start_time = perf_counter()
+                    self.error_count = 0
+                    hello_packet_start_time = perf_counter()
+                    comms_to_bluno_start_time = perf_counter()
                     break
 
 
@@ -527,13 +564,15 @@ class BlunoVest:
 
                     else:
                         tuple_data3 = tuple(tuple_data)
-                        print(tuple_data3)
                         # print(tuple_data3)
                         if (tuple_data3[1] == 0):
                             if (self.parent.helloPacketReceived == False):
                                 self.parent.helloPacketReceived = True
                             elif (self.parent.connPacketReceived == False):
                                 self.parent.connPacketReceived = True
+                            
+                            elif (self.parent.helloPacketReceived and self.parent.connPacketReceived):
+                                self.parent.commsToBlunoSent = True
                         elif (tuple_data3[1] == 4):
                             # ch3.write(CRC8Packet.pack_data(HelloPacket(ACK_PACKET_ID)))
                             relay_queue.put("KANA SHOT")
@@ -562,9 +601,9 @@ if __name__=='__main__':
     mqtt_client = MQTTClient(sn)
     mqtt_thread = Process(target=mqtt_client.run)
 
-    t1.start()
+    # t1.start()
     t2.start()    
     t3.start()
 
-    relay.start()
-    mqtt_thread.start()
+    # relay.start()
+    # mqtt_thread.start()

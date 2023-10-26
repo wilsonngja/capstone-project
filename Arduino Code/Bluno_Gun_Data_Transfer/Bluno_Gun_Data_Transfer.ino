@@ -169,7 +169,7 @@ void loop() {
 //        shotNum = 6- bullets_left;
         
         updateBullet(shotNum);
-
+        Serial.write((uint8_t*) &hello_packet_response, sizeof(hello_packet_response));
           
       }
 
