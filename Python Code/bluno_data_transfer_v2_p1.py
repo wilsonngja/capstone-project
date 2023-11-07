@@ -601,7 +601,7 @@ if __name__=='__main__':
     mqtt_client = MQTTClient(sn)
     mqtt_thread = Process(target=mqtt_client.run)
 
-    # t1.start()
+    t1.start()
     t2.start()    
     t3.start()
 
