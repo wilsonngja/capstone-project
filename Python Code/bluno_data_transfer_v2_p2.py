@@ -644,13 +644,8 @@ if __name__=='__main__':
     mqtt_thread = Process(target=mqtt_client.run)
 
     t1.start()
-<<<<<<< HEAD
-    # t2.start()    
-    # t3.start()
-=======
     t2.start()    
     t3.start()
->>>>>>> refs/remotes/origin/main
 
     relay.start()
     mqtt_thread.start()
