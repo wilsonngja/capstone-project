@@ -231,17 +231,23 @@ void loop() {
   struct Ack_Packet ack_packet_response;
   
   // Check for data available
+  
   if (Serial.available()) {
     byte data = Serial.read();
+    
     if (data == BLUNO_2_DEVICE_ID) {
+      
       index = 0;
     }
     incomingData[index] = data;
     index += 1;
   }
 
+  
+  
   // When full Data Packet arrive
   if (index == 20) {
+    
     index = 0;
 
     // If checksum is correct (0)    
@@ -259,6 +265,7 @@ void loop() {
       } 
     }
   }
+  Serial.print("LOL");
 
       
   //Serial.println("start");
@@ -283,8 +290,11 @@ void loop() {
   // resetFunc();
   // while(1);
   
-
+  Serial.print(millis());
+  start_of_move();
+  Serial.print(millis());
   
+  delay(7);
 //  Serial.println("RESET");
 }
     
