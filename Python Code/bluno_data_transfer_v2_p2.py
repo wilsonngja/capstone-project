@@ -45,6 +45,7 @@ index = 1
 TIMEOUT = 0.5 
 
 BROKER = 'test.mosquitto.org'
+# BROKER = '116.15.202.187'
 relay_queue = Queue()
 mqtt_queue = Queue()
 gun_queue = Queue()
@@ -94,7 +95,7 @@ class RelayClient:
 
 
     async def main(self):
-        self.sock.connect(('172.26.190.113', 10000 + self.sn)) 
+        self.sock.connect(('172.26.191.64', 10000 + self.sn)) 
 
         print("connected")
 

@@ -36,8 +36,8 @@ int i = 0;
 
 int player = 2;
 int pulseDelay = (player == 1) ?  20 : 50;
-int shootTime = 400;
-int cooldownTime = 800;
+int shootTime = 200;
+int cooldownTime = 400;
 
 bool shotFired = false;
 int reload = 0;

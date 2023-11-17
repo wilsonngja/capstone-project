@@ -4,8 +4,8 @@
 #include "Bluno_Variables_3.h"
 
 // VEST
- #define player 1 // Orange (50)
-//#define player 2 // BLUE (20)
+#define player 1 // Or/ange (50)
+//#define player 2 /// BLUE (20)
 
 #include <Adafruit_NeoPixel.h>
 #define neoPixelPin A2
@@ -24,7 +24,7 @@ unsigned long pulsebuffer = 0;
 int numOfChecks;
 int errorCount = 0;
 
-int lightuptime = 800;
+int lightuptime = 200;
 int hitbywhichplayer = 0; // to send to internal comms
 bool receiverstate = 0;
 int pulsecheck = 0;
@@ -47,14 +47,6 @@ void playerShot(int livesNum) {
       }
     }
     NeoPixel.show(); 
-    delay(1100);
-
-  if(livesNum <= 0) {
-    NeoPixel.clear();
-    NeoPixel.show(); 
-    delay(500);
-    livesNum = 10;
-  }
   
 }
 
@@ -213,7 +205,7 @@ void loop() {
 //          isReadyToSendData = f/alse;
           
           hitbywhichplayer = 1; // internal comms
-          livesNum--;
+          livesNum = (livesNum - 1 == 0) ? 10 : livesNum - 1;
           playerShot(livesNum);
           // health();
           receivetime=millis();
